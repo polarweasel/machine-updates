@@ -17,6 +17,37 @@ extends:
     # This is the Spectral default OpenAPI 3.0 ruleset.
 
 rules:
+
+  ########################
+  # New rules for RFC 9457
+  ########################
+
+  # Author: Frank Kilcommins (https://github.com/frankkilcommins)
+  no-errors-without-content:
+    message: Error responses MUST describe the error
+    description: Error responses should describe the error that occurred. This is useful for the API consumer to understand what went wrong and how to fix it. Please provide a description of the error in the response.
+    given: $.paths[*]..responses[?(@property.match(/^(4|5)/))]
+    then:
+      field: content
+      function: truthy
+    formats: [oas3]
+    severity: warn
+
+  # Author: Phil Sturgeon (https://github.com/philsturgeon)
+  no-unknown-error-format:
+    message: Error response should use a standard error format.
+    description: Error responses can be unique snowflakes, different to every API, but standards exist to make them consistent, which reduces surprises and increase interoperability. Please use either RFC 7807 (https://tools.ietf.org/html/rfc7807) or the JSON:API Error format (https://jsonapi.org/format/#error-objects).
+    given: $.paths[*]..responses[?(@property.match(/^(4|5)/))].content.*~
+    then:
+        function: enumeration
+        functionOptions:
+          values:
+              - application/vnd.api+json
+              - application/problem+json
+              - application/problem+xml
+    formats: [oas3]
+    severity: warn
+
   #############################
   # Overrides to existing rules
   #############################

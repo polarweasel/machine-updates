@@ -1,0 +1,24 @@
+{
+  "name": "machine-updates-api",
+  "keywords": [],
+  "author": "Alex Ball",
+  "license": "GPL-3.0-only",
+  "description": "Networked machine status APIs",
+  "version": "1.0.0",
+  "dependencies": {
+    "@redocly/cli": "^1.34.4",
+    "@stoplight/prism-cli": "^5.14.2",
+    "@stoplight/spectral-cli": "^6.15.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "bundle-external": "redocly bundle external@latest --output dist/external.yaml",
+    "bundle-internal": "redocly bundle internal@latest --output dist/internal.yaml",
+    "lint-external": "spectral lint dist/external.yaml",
+    "lint-internal": "spectral lint dist/internal.yaml",
+    "mock-external": "prism mock dist/external.yaml",
+    "mock-internal": "prism mock dist/internal.yaml",
+    "preview-external": "redocly preview-docs external@latest",
+    "preview-internal": "redocly preview-docs internal@latest"
+  }
+}

@@ -1,0 +1,1679 @@
+openapi: 3.0.3
+
+info:
+  title: Student Records API
+
+  description: |
+    The Student Records API provides access to student information, including academic activities, advanced standing, financial information, and more.
+
+    **CAUTION** APIM doesn't return an HTTP 405 error code when a _method_ does not exist, but the _path_ does. There's no good workaround for this. Microsoft suggests (in [this blog post](https://techcommunity.microsoft.com/blog/azurepaasblog/azure-api-management-limitation-workaround-return-404-instead-of-405-when-the-ht/1588413)) implementing a silly policy hack such that APIM returns a 405 for a missing path (should be 404) _and_ for a missing method (405). This is also true for 501 (method not supported at all on the server), among others.
+
+  version: 2024-11-29-preview
+
+  contact:
+    # TODO add correct contact information
+    name: EASI API Support        # Don't put someone's name here!
+    email: email@example.com      # Email should be a group alias
+    url: 'https://example.com/'   # Maybe have an ESC form linked here?
+
+security:
+  - OAuth2: ['read']
+  - x-token: []
+  - authorization: []
+
+servers:
+  - url: https://n301-easi-api-mgmt-dev.azure-api.net/studentRecords
+    description: Development server
+  - url: https://p301-easi-api-mgmt-prod.azure-api.net/studentRecords
+    description: Production server
+
+tags:
+  - name: Academic Activities
+    description: Operations related to a student's courses and other academic activities
+  - name: Advanced Standing
+    description: Operations related to a student's advanced standing
+  - name: API Info
+    description: Operations related to the API itself
+  - name: EASI-Internal
+    description: Operations used for inter-microservice communication. Potentially useful to non-EASI developers, as well.
+  - name: Financial
+    description: Operations related to a student's financial information
+  - name: Profile
+    description: Operations related to a student's profile
+  - name: Registration
+    description: Operations related to a student's registration
+
+paths:
+  /:
+    get:
+      summary: Get API information
+      description: |
+        Returns information about the API.
+
+        This method is also useful to verify that the API is up and running.
+      tags:
+        - API Info
+      operationId: APIInfo_list
+      responses:
+        '200':
+          $ref: '#/components/responses/ApiInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+
+  '/students':
+    get:
+      # This is a replacement for the on-prem API documented here:
+      # https://its-uoft.atlassian.net/wiki/spaces/EASI/pages/11602438/Student+Records+Web+Service
+      summary: Search for students
+      description: |
+        Returns a list of students matching the specified criteria.
+
+        Use this method to search for students by name or department. This is a sub-string search, and you can specify any or all of `firstName`, `lastName`, and `department`.
+
+        **Note**: To search for a single-character first name, you must also include the `lastName` query parameter.
+      tags:
+        - Profile
+      operationId: Student_list
+      parameters:
+        - $ref: '#/components/parameters/searchLastName'
+        - $ref: '#/components/parameters/searchFirstName'
+        - $ref: '#/components/parameters/searchDepartment'
+      responses:
+        '200':
+          description: Successfully retrieved one or more students.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BaseStudent'
+        '400':
+          description: Bad request. You must specify at least one of lastName, firstName, or department. If you search for a one-character firstName, you MUST also specify lastName.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                one_character_firstName:
+                  value:
+                    status: 400
+                    timestampAt: "2024-09-23T10:15:00Z"
+                    type: https://example.com/docs/errors/bad-request
+                    detail: To search for a one-character firstName, you MUST also specify lastName.
+                lastName_too_short:
+                  value:
+                    status: 400
+                    timestampAt: "2024-09-23T10:17:00Z"
+                    type: https://example.com/docs/errors/bad-request
+                    detail: lastName MUST be at least two characters.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}':
+    get:
+      summary: Get student information
+      description: |
+        Returns information about the specified student.
+
+        By default, the returned `Student` object includes only the `profile` and `regProgram` properties. Use the `includeOptionalFields` query parameter to include the other properties.
+
+        **Note:** See the [Get student profile](#tag/Profile/operation/StudentProfile_list) method for more detailed information about the `profile` object, including important notes on PII.
+
+      # TODO Once the description is finalized for StudentProfile_list, adjust this one to match
+      tags:
+        - Profile
+      operationId: Student_get
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/includeAllActivities'
+        - $ref: '#/components/parameters/includeGradData'
+        - $ref: '#/components/parameters/includeNonDegreePosts'
+        - $ref: '#/components/parameters/includeOptionalFields'
+        - $ref: '#/components/parameters/includeSensitiveFields'
+
+      responses:
+        '200':
+          description: Requested student successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/advanced-standings':
+    get:
+      summary: Get advanced standing
+      description: |
+        Returns the specified student's advanced standing details.
+
+        Objects in the returned `AdvancedStanding` object include all fields. You don't need to use the `includeOptionalFields` query parameter.
+      tags:
+        - Advanced Standing
+      operationId: AdvancedStanding_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/sessionId'
+      responses:
+        '200':
+          description: Requested advanced standing details successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvancedStanding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/courses':
+    get:
+      summary: Get student's courses
+      description: |
+        Returns the specified student's course information.
+
+        By default, the `StudentCourse` objects in the returned `Courses` object includes all properties **except** `enteredMark`, `markPercentValue`, `symbolMark`, and `waitlistPosition`. Use the `includeOptionalFields` query parameter to include these.
+      tags:
+        - Academic Activities
+      operationId: Courses_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/sessionId'
+        - $ref: '#/components/parameters/includeOptionalFields'
+      responses:
+        '200':
+          description: Requested course information successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicActivities'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/advanced-credits-earned':
+    get:
+      summary: Get advanced credits earned
+      description: |
+        Retrieves the specified student's advanced credits earned. EASI internal use only.
+
+        Includes only advanced credits. For cumulative credits, use `/students/{studentId}/course-credits-earned`.
+      tags:
+        - Academic Activities
+        - Advanced Standing
+        - EASI-Internal
+      operationId: AdvancedCreditsEarned_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+      responses:
+        '200':
+          description: Requested student advanced credit details successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvancedCreditsEarned'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/course-credits-earned':
+    get:
+      summary: Get credits earned
+      description: |
+        Retrieves the specified student's credits earned. Includes cumulative and advanced credits. EASI internal use only.
+
+        To retrieve advanced credits earned, use `/students/{studentId}/advanced-credits-earned`.
+      tags:
+        - Academic Activities
+        - EASI-Internal
+      operationId: CourseCreditsEarned_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+      responses:
+        '200':
+          description: Requested student earned credit details successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditsEarned'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/course-term-loads':
+    get:
+      summary: Get a student's term load
+      description: |
+        Returns the specified student's term load. EASI internal use only.
+
+        The University defines a full course load as 2.5 credits per term.
+
+        A full course offered in one term has a load of 1.0, while that same full course offered offered over two terms would have a term load of 0.5 in each term. A half course offered over two terms would have a term load of 0.25 in each term.
+      tags:
+        - Academic Activities
+        - EASI-Internal
+      operationId: TermLoad_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+      responses:
+        '200':
+          description: Requested student term load details successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseTermLoad'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/current-course-load':
+    get:
+      summary: Get current course load
+      description: Returns the specified student's current course load. EASI internal use only. This is the sum of all items returned by `GET /students/{studentId}/course-term-loads`.
+      tags:
+        - Academic Activities
+        - EASI-Internal
+      operationId: CurrentCourseLoad_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+      responses:
+        '200':
+          description: Requested student course load successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentCourseLoad'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/financial':
+    get:
+      summary: Get financial information
+      description: |
+        Returns the specified student's financial information.
+
+        By default, the returned `Financial` object includes the `accountBalance` property. Use the `includeOptionalFields` query parameter to include the `missingSin` property.
+      tags:
+        - Financial
+      operationId: FinancialInfo_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/includeOptionalFields'
+      responses:
+        '200':
+          description: Requested student financial information successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Financial'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/profile':
+    get:
+      summary: Get student's profile
+      description: |
+        Returns the specified student's profile.
+
+        Use the `includeOptionalFields` query parameter to include `transcriptHold` and `trespass`.
+
+        The following fields are specific to graduate students:
+
+          * admissionDate
+          * candidacyAchieved
+          * gradFunding
+          * thesisTitle
+
+        The following fields are considered sensitive PII, and require additional authorization. Use the `includeSensitiveFields` query parameter to include these fields:
+
+          * birthDate
+          * citizenship
+          * legalStatus
+
+        **Note**: Properties that start with `current` in the Profile object (such as `currentStatus`) are based on the registration associated with the _most recent session_. If the student has a registration for an upcoming session, use the `useFutureRegistration` query parameter to base these properties on that registration. For example, you would use this query parameter with a final-year undergraduate student who has already registered for a master's degree program. If you didn't use the parameter, you wouldn't see any master's information.
+      tags:
+        - Profile
+      operationId: StudentProfile_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/includeOptionalFields'
+        - $ref: '#/components/parameters/includeSensitiveFields'
+        - $ref: '#/components/parameters/useFutureRegistration'
+      responses:
+        '200':
+          description: Requested student profile successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/registration-profile':
+    # TODO This is brand-new (Nov 29). Most of what's here is likely to be WRONG. :)
+    get:
+      summary: Get student's registration profile
+      description: |
+        Returns the specified student's registration profile. This is a subset of the full Profile object, applicable to the current registration only.
+
+        Use the `includeOptionalFields` query parameter to include `transcriptHold` and `trespass`.
+
+        The following fields are specific to graduate students:
+
+          * admissionDate
+          * candidacyAchieved
+          * gradFunding
+          * thesisTitle
+
+        The following fields are considered sensitive PII, and require additional authorization. Use the `includeSensitiveFields` query parameter to include these fields:
+
+          * birthDate
+          * citizenship
+          * legalStatus
+
+        **Note**: Properties that start with `current` in the Profile object (such as `currentStatus`) are based on the registration associated with the _most recent session_. If the student has a registration for an upcoming session, use the `useFutureRegistration` query parameter to base these properties on that registration. For example, you would use this query parameter with a final-year undergraduate student who has already registered for a master's degree program. If you didn't use the parameter, you wouldn't see any master's information.
+      tags:
+        - Profile
+        - Registration
+      operationId: StudentRegistrationProfile_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/includeOptionalFields'
+        - $ref: '#/components/parameters/includeSensitiveFields'
+        - $ref: '#/components/parameters/useFutureRegistration'
+      responses:
+        '200':
+          description: Requested student registration profile successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  '/students/{studentId}/registrations':
+    get:
+      summary: Get registration details
+      description: |
+        Returns the specified student's registration information.
+
+        By default, the returned RegProgram object includes all properties **except** `degreeRequests`. Use the `includeOptionalFields` query parameter to include this property.
+      tags:
+        - Registration
+      operationId: Registrations_list
+      parameters:
+        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/sessionId'
+        - $ref: '#/components/parameters/includeOptionalFields'
+      responses:
+        '200':
+          description: Requested student registration information successfully retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegProgram'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+  /version:
+    get:
+      summary: Get API version
+      description: Returns the current version of the API
+      tags:
+        - API Info
+      operationId: APIVersion_list
+      responses:
+        '200':
+          $ref: '#/components/responses/ApiInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+
+# Some useful reference docs for OpenAPI 3.0 and 3.1...
+#
+# String formats and validation: https://www.apimatic.io/openapi/string-type-format
+#
+# OpenAPI 3.0 data types: https://swagger.io/docs/specification/data-models/data-types/
+
+  securitySchemes:
+    # TODO Add a real security scheme. This section is currently 100% boilerplate!
+    x-token:
+      name: x-token
+      type: apiKey
+      in: header
+      description: x-token header authentication
+
+    authorization:
+      type: http
+      scheme: bearer
+      description: Bearer token authentication
+
+    OAuth2:
+      type: oauth2
+      description: OAuth 2.0 authorization
+      flows:
+        authorizationCode:
+          scopes:
+            read: Grants read access
+            write: Grants write access
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          refreshUrl: https://example.com/oauth/refresh
+
+  parameters:
+
+    # $ref: 'common/parameters.yaml'
+
+    includeAllActivities:
+      description: |
+        Optional boolean. If true, the response includes: courses not associated with a candidacy POSt; all activities with INT, REF, and REQ statuses; and, activities of type COFEE and FLC.
+      name: includeAllActivities
+      in: query
+      required: false
+      schema:
+        type: boolean
+
+    includeGradData:
+      description: Set to true if you want to get graduate student data. Omit for undergrad.
+      name: includeGradData
+      in: query
+      required: false
+      schema:
+        type: boolean
+
+    includeNonDegreePosts:
+      description: Set to true if you want to include non-degree POSts in the returned data.
+      name: includeNonDegreePosts
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+
+    includeOptionalFields:
+      description: |
+        Use this query parameter to include optional fields in the response. By default, the response includes a minimal set of fields. Refer to each method's documentation for details on which fields are included by default.
+      name: includeOptionalFields
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+
+    includeSensitiveFields:
+      description: Use this query parameter to include sensitive PII fields in the response.
+      name: includeSensitiveFields
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+
+    searchDepartment:
+      description: The student's department. Must be a complete department code, such as CSC (computer science).
+      name: department
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 10
+      example: CSC
+
+    searchFirstName:
+      description: The student's first name. Must be at least two characters, or one character if you also specify lastName.
+      name: firstName
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 1
+      example: Jane
+
+    searchLastName:
+      description: The student's last name. Must be at least two characters.
+      name: lastName
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+      example: Doe
+
+    sessionId:
+      # TODO need to figure out what the sessionId parameter should actually specify. Thinking we want to be able to get ALL history, or just the MOST-RECENT session.
+      description: Uniquely identifies a session. Use this parameter to retrieve only the information associated with a specific session.
+      name: sessionId
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/SessionCode'
+
+    studentId:
+      description: Unique identifier for a student. This can be either a UTORid or a Person ID.
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
+        oneOf:
+          - description: A student ID number
+            minLength: 1
+            maxLength: 10
+            pattern: '^[1-9][0-9]*$'
+            example: 9999999999
+            # starts with 1-9, then zero or more digits
+          - description: A UTORid
+            minLength: 3
+            maxLength: 8
+            pattern: '^[A-Za-z][A-Za-z0-9]+$'
+            example: test01
+            # starts with a letter, then letters and digits
+      examples:
+        studentId_example:
+          value: '9999999999'
+        utorId_example:
+          value: test01
+
+    useFutureRegistration:
+      description: If true, properties beginning with `current` in the Profile object are based on the newest future registration, rather than the registration associated with the current session (or most recent, if there is no registration associated with the current session).
+      name: useFutureRegistration
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: false
+
+
+
+  responses:
+
+    ApiInfo:
+      description: Information about the API. Currently, this is just the version string.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              version:
+                description: The API version
+                type: string
+                example: 2024-11-04-preview
+
+    BadRequest:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            timestampAt: 2024-09-23T10:15:00Z
+            type: https://example.com/docs/errors/bad-request
+            detail: Bad request. The request is missing a required parameter, or a parameter is invalid.
+
+    Unauthorized:
+      description: Unauthorized. You must be authenticated to access this resource. The `WWW-Authenticate` header lists supported schemes.
+      headers:
+        WWW-Authenticate:
+          description: Supported authentication schemes
+          schema:
+            type: string
+          example: Bearer realm="example.com", Basic realm="example.com"
+          # TODO get a real authentication example in here
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            timestampAt: 2024-09-23T10:15:00Z
+            type: https://example.com/docs/errors/unauthorized
+            detail: Unauthorized. You must be authenticated to access this resource.
+
+    Forbidden:
+      description: Forbidden. You don't have permission to access this resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 403
+            timestampAt: 2024-09-23T10:15:00Z
+            type: https://example.com/docs/errors/forbidden
+            detail: Forbidden. You don't have permission to access this resource.
+
+    NotFound:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            timestampAt: 2024-09-23T10:15:00Z
+            type: https://example.com/docs/errors/not-found
+            detail: Not found
+
+    InternalServerError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            timestampAt: 2024-09-23T10:15:00Z
+            type: https://example.com/docs/errors/internal-server-error
+            detail: Internal server error
+
+  schemas:
+
+    ErrorResponse:
+      # RFC 7807 defines the format of error responses.
+      # https://datatracker.ietf.org/doc/html/rfc7807
+      # We're not using it here, but worth considering.
+      description: Error response for all methods.
+      type: object
+      required:
+        - status
+        - type
+        - timestampAt
+      properties:
+        status:
+          description: HTTP status code
+          type: number
+        type:
+          description: A reference that identifies the problem type
+          type: string
+        timestampAt:
+          description: The time the error occurred. This is an RFC3339 date-time, in the form `yyyy-mm-ddThh:mm:ssZ`.
+          type: string
+          format: date-time
+          example: 2024-09-23T10:15:00Z
+        detail:
+          description: A human-readable message describing the error
+          type: string
+        additionalDetails:
+          description: Optional additional details about the error. This can be any arbitrary JSON object.
+          type: object
+          additionalProperties: true
+
+    AcademicActivities:
+      description: Collection of courses
+      type: object
+      properties:
+        courses:
+          description: Array of courses
+          type: array
+          items:
+            $ref: '#/components/schemas/AcademicActivity'
+
+    Address:
+      description: An address. All properties except type are nullable.
+      type: object
+      properties:
+        careOf:
+          description: A "care of" or "attention" address line
+          type: string
+          maxLength: 40
+          nullable: true
+        city:
+          description: City or local equivalent
+          type: string
+          maxLength: 40
+          nullable: true
+        country:
+          description: Country (not country code)
+          type: string
+          maxLength: 40
+          nullable: true
+        county:
+          description: County (optional)
+          type: string
+          maxLength: 40
+          nullable: true
+        phoneNumber:
+          description: Phone number with area code, and potentially country code
+          type: string
+          maxLength: 12
+          nullable: true
+        postalCode:
+          description: Postal code or equivalent (such as ZIP code)
+          type: string
+          maxLength: 12
+          nullable: true
+        province:
+          description: Province or equivalent (such as US state)
+          type: string
+          maxLength: 2
+          nullable: true
+        street:
+          description: Street name and number
+          type: string
+          maxLength: 60
+          nullable: true
+        type:
+          description: Address type (such as mailing or emergency)
+          type: string
+          enum: [mailing, permanent, emergency, S, N, E]
+          # TODO verify the values for Address.type. (And define S, N, and E in the description)
+
+    AdvancedStanding:
+      description: .
+      type: object
+      properties:
+        courseAdvancedStandings:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentAdvancedStanding'
+        retainedAdvancedStandings:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/RetainedAdvancedStandings'
+        subjectAdvancedStandings:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentSubjectAdvancedStanding'
+        transferExclusions:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferExclusions'
+
+    BaseStudent:
+      description: Base properties for a student.
+      type: object
+      required:
+        - department
+        - firstName
+        - lastName
+        - studentNumber
+      properties:
+      # TODO What limits can we place on the fields in BaseStudent?
+      # - minLength and maxLength on firstName and lastName?
+      # - min/max on department?
+        department:
+          description: .
+          type: string
+        firstName:
+          description: .
+          type: string
+        lastName:
+          description: .
+          type: string
+        studentNumber:
+          description: .
+          type: integer
+          minimum: 1
+          maximum: 9999999999
+
+    BaseStudentCourse:
+      description: Base properties for a student course.
+      type: object
+      required:
+        # Don't include anything here that will be retrieved using "includeOptionalFields" or similar.
+        # Also, we CAN'T include anything here that's marked with `x-internal: true`.
+        - courseCode
+        - courseTitle
+        - credits
+        - primaryOrgCode
+        - sessionCode
+      properties:
+        courseCode:
+          description: .
+          type: string
+        courseTitle:
+          description: .
+          type: string
+        credits:
+          description: .
+          type: string
+        markAlphaValue:
+          # not minimal
+          description: .
+          type: string
+          pattern: '^[ABCDF][+-]?$'
+        primaryOrgCode:
+          description: .
+          type: string
+        sessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+
+    AdvancedCreditsEarned:
+      description: A student's advanced credits earned
+      type: object
+      properties:
+        candidacyPostCode:
+          description: .
+          type: string
+        candidacySessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+        creditsEarned:
+          description: .
+          type: number
+        personId:
+          description: .
+          type: string
+        postCode:
+          description: .
+          type: string
+        sessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+        type:
+          description: Credit type (Course or Subject)
+          type: string
+          enum: [C, S]
+
+    CourseTermLoad:
+      description: A student's term load for a single course.
+      type: object
+      properties:
+        courseCode:
+          description: .
+          type: string
+        endSessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+        postCode:
+          description: POSt code for the course
+          type: string
+        sessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+        startSessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+        termLoad:
+          description: Computed term load
+          type: number
+          enum: [0.25, 0.5, 1.0]
+
+    CreditsEarned:
+      description: A student's credits earned
+      type: object
+      properties:
+        candidacyPostCode:
+          description: .
+          type: string
+        candidacySessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+        creditsEarned:
+          description: .
+          type: number
+        personId:
+          description: .
+          type: string
+        postCode:
+          description: .
+          type: string
+        sessionCode:
+          description: .
+          $ref: '#/components/schemas/SessionCode'
+
+    CurrentCourseLoad:
+      description: A student's current course load
+      type: object
+      properties:
+        courseLoad:
+          description: Computed course load
+          type: number
+          minimum: 0
+
+    DegreeRequest:
+      description: .
+      type: object
+      properties:
+        citation:
+          description: This is null only if citationCode is also null.
+          type: string
+          nullable: true
+          example: with High Honours
+        citationCode:
+          description: This is null only if citation is also null.
+          type: string
+          nullable: true
+          example: HHO
+        degreeConferralDate:
+          description: Date degree was conferred. This is an RFC3399 full-date, in YYYY-MM-DD format. This cannot be in the future.
+          type: string
+          format: date
+          nullable: true
+          example: 2024-09-23
+        departmentEligible:
+          description: .
+          type: boolean
+        facultyEligible:
+          description: .
+          type: boolean
+        postCode:
+          description: Student's program of study
+          type: string
+        requestReceivedDate:
+          description: Date the request was received. This is an RFC3399 full-date, in YYYY-MM-DD format. This cannot be in the future.
+          type: string
+          format: date
+          nullable: true
+          example: 2024-09-23
+        requestReceived:
+          description: .
+          type: boolean
+        sessionCode:
+          $ref: '#/components/schemas/SessionCode'
+        upgradingCompleteSession:
+          description: .
+          type: string
+
+    Email:
+      description: .
+      type: object
+      properties:
+        emailAddress:
+          description: .
+          type: string
+          format: email
+        type:
+          # TODO can we make Email.type an enum?
+          description: .
+          type: string
+
+    Financial:
+      description: .
+      type: object
+      properties:
+        accountBalance:
+          description: .
+          type: number
+          example: -57.30
+        missingSin:
+          # not minimal
+          description: .
+          type: boolean
+
+    PhoneContact:
+      description: .
+      type: object
+      required:
+        # Don't include anything here that will be retrieved using "includeOptionalFields" or similar.
+        # Also, we CAN'T include anything here that's marked with `x-internal: true`.
+        - phoneNumber
+        - type
+      properties:
+        firstName:
+          description: .
+          type: string
+        lastName:
+          description: .
+          type: string
+        phoneNumber:
+          description: .
+          type: string
+        type:
+          description: .
+          type: string
+          # TODO verify the enum values for PhoneContact.type
+          enum: [emergency, mobile, work]
+        relationshipCode:
+          description: .
+          type: string
+          enum: [a,b,c,d,e,f,g] # TODO get and describe the real list of 18 PhoneContact.relationshipCode values
+      example:
+        firstName: Jane
+        lastName: Doe
+        type: mobile
+        phoneNumber: 416-555-1234
+
+    Profile:
+      type: object
+      description: Student profile information.
+      required:
+        # Don't include anything here that will be retrieved using "includeOptionalFields" or similar.
+        # Also, we CAN'T include anything here that's marked with `x-internal: true`.
+        - firstName
+        - lastName
+        - studentNumber
+        - utorId
+
+      properties:
+
+        ### NEW GLOBAL FIELDS ###
+
+        birthDate:
+          # not minimal
+          description: The student's date of birth. This is an RFC3399 full-date, in YYYY-MM-DD format.
+          type: string
+          format: date
+          nullable: true
+          example: 2006-01-25
+        citizenship:
+          # not minimal
+          description: The student's citizenship. If the student's citizenship is known, this is generally the country's English name. If the student's citizenship is unclear in the database (but is not Canadian), this value will be 5 digits (possibly with leading zeroes).
+          type: string
+          minLength: 1
+          maxLength: 40
+        legalStatus:
+          # not minimal
+          description: The student's legal status. This is either "domestic" or "international". This is only null if `citizenship` is also null.
+          type: string
+          nullable: true
+          enum: [domestic, international]
+
+        ### NEW GRAD-STUDENT FIELDS ###
+
+        gradFunding:
+          description: Indicates whether the student has funding
+          type: boolean
+        admissionDate:
+          # TODO move Profile.admissionDate to Registration object?
+          # TODO is Profile.admissionDate nullable?
+          description: Status timestamp of the candidacy associated with the current Registration
+          type: string
+          format: date
+          example: 2024-09-23
+        thesisTitle:
+          description: Thesis title, if available
+          type: string
+          nullable: true
+        candidacyAchieved:
+          description: .
+          type: boolean
+
+        ### END NEW FIELDS ###
+
+        addresses:
+          description: The student's address(es).
+          type: array
+          items:
+            $ref: '#/components/schemas/Address'
+        currentDegreeCode:
+          description: The code for the student's current degree.
+          # TODO what kind of code is Profile.currentDegreeCode, and where is the list? Can we make this an enum?
+          type: string
+          nullable: true
+        currentRegStudent:
+          description: .
+          type: boolean
+        currentStatus:
+          description: .
+          # TODO Profile.currentStatus: can we make this an enum?
+          type: string
+        currentYearOfStudy:
+          description: The student's current year of study.
+          type: integer
+          minimum: 1
+          example: 3
+        emails:
+          description: The student's email address(es).
+          type: array
+          items:
+            $ref: '#/components/schemas/Email'
+        firstName:
+          description: The student's given first name. Use preferredName when possible.
+          type: string
+          nullable: true
+        lastName:
+          description: The student's last name.
+          type: string
+          nullable: true
+        phoneContacts:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/PhoneContact'
+        preferredName:
+          description: The student's preferred first name, if they have set one. Use this in place of firstName when possible.
+          type: string
+        studentNumber:
+          description: .
+          type: integer
+          minimum: 1
+          maximum: 9999999999
+        title:
+          description: Honorific, such as Ms, Lieutenant-Colonel, Dr, Retired Reverend, and so on.
+          type: string
+          nullable: true
+        transcriptHold:
+          # not minimal
+          description: The student's transcript is on hold for one of a number of reasons. For example, the student may have an outstanding balance.
+          type: boolean
+        trespass:
+          # not minimal
+          description: Indicates that staff and faculty are not permitted to be alone with the student.
+          type: boolean
+        utorId:
+          description: The student's UTORid.
+          type: string
+          nullable: true
+          minLength: 3
+          maxLength: 8
+          pattern: '^[A-Za-z][A-Za-z0-9]+$'
+          example: test01
+          # starts with a letter, then letters and digits
+
+    Registration:
+      description: .
+      type: object
+      required:
+        # Don't include anything here that will be retrieved using "includeOptionalFields" or similar.
+        # Also, we CAN'T include anything here that's marked with `x-internal: true`.
+        - currentCourseLoad
+        - department
+        - enrolmentStatus
+      properties:
+        academicStanding:
+          description: Current academic standing
+          type: string
+          nullable: true
+          $ref: 'common/fragments/academicStanding.yaml'
+          example: On academic probation
+        academicStandingCode:
+          description: The code corresponding to academicStanding
+          type: string
+          nullable: true
+          $ref: 'common/fragments/academicStandingCode.yaml'
+          example: PTS4
+        agpa:
+          # not minimal
+          description: Annual GPA (current year)
+          type: string
+          pattern: '[0-4]\.\d{2}'
+          example: '3.75'
+        associatedOrgCode:
+          description: Associated college
+          type: string
+          # should we enumerate?
+          nullable: true
+          example: VIC
+        attendanceClass:
+          # TODO Registration.enrolmentStatus is the same as attendanceClass: David to figure out which to delete
+          description: Attendance class (full-time or part-time)
+          type: string
+          enum: [FT, PT]
+          nullable: true # some DB rows are blank. Why?
+          example: FT
+        candidacyPostCode:
+          description: .
+          # TODO Registration.candidacyPostCode is the same codes as other POSt codes, but need to know the difference
+          type: string
+        candidacySessionCode:
+          $ref: '#/components/schemas/SessionCode'
+        cgpa:
+          # not minimal
+          description: Cumulative GPA (all years)
+          type: string
+          pattern: '[0-4]\.\d{2}'
+          example: '3.14'
+        currentCourseLoad:
+          description: .
+          type: number
+          minimum: 0
+        department:
+          description: The student's department
+          type: string
+        enrolmentStatus:
+          # TODO Registration.enrolmentStatus is the same as attendanceClass: David to figure out which to delete
+          description: .
+          type: string
+        levelOfInstruction:
+          description: Indicates if the associated POSt is at the graduate or undergraduate level
+          type: string
+          enum: [G, U]
+        postCode:
+          description: .
+          type: string
+        postTitle:
+          description: .
+          type: string
+        primaryOrgCode:
+          description: The student's division (faculty)
+          type: string
+        registrationStatus:
+          description: The student's registration status. This can be REGistered, FINancially CAncelled, DEREGistered, CANCelled, or INVITed.
+          type: string
+          enum: [REG, FINCA, DEREG, CANC, INVIT]
+        secondaryOrgCode:
+          description: The student's department
+          type: string
+        sessionCode:
+          $ref: '#/components/schemas/SessionCode'
+        sessionalCreditsEarned:
+          # TODO come back to Registration.sessionalCreditsEarned after defining creditsEarned
+          # not minimal
+          description: .
+          type: number
+          minimum: 0
+        sgpa:
+          # not minimal
+          description: Sessional GPA (current session)
+          type: string
+          pattern: '[0-4]\.\d{2}'
+          example: '4.00'
+        totalCreditsEarned:
+          # TODO come back to Registration.totalCreditsEarned after defining creditsEarned
+          # not minimal
+          description: .
+          type: number
+          minimum: 0
+        yearOfStudy:
+          description: Student's current year of study. May be null in certain cases, such as non-degree or graduate students.
+          type: integer
+          minimum: 0
+          maximum: 100 # TODO what's the maximum value for Registration.yearOfStudy?
+          example: 3
+          nullable: true
+
+    RegProgram:
+      description: .
+      type: object
+      properties:
+        degreeRequests:
+          # not minimal
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/DegreeRequest'
+        posts:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentPost'
+        registrations:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/Registration'
+        studentSubjectPosts:
+          description: .
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentSubjectPost'
+
+    RetainedAdvancedStandings:
+      # TODO define the RetainedAdvancedStandings object
+      description: .
+      type: object
+
+    SessionCode:
+      description: A session code consisting of 4-digit year, 1-digit term, and optional sub-session identifier (First or Second session). Reserved value 99999 is used for sample data.
+      type: string
+      pattern: '^[12]\d{4}[FS]?$|99999'
+      example: 20215F
+
+    Student:
+      description: .
+      type: object
+      properties:
+        academicActivities:
+          # not minimal
+          $ref: '#/components/schemas/AcademicActivities'
+        advancedStanding:
+          # not minimal
+          $ref: '#/components/schemas/AdvancedStanding'
+        financial:
+          # not minimal
+          $ref: '#/components/schemas/Financial'
+        profile:
+          $ref: '#/components/schemas/Profile'
+        regProgram:
+          $ref: '#/components/schemas/RegProgram'
+
+    StudentPost:
+      description: Student's program of study (POSt)
+      type: object
+      properties:
+        campus:
+          description: .
+          type: string
+          # this should be an enum. there's only, what, four campuses?
+        degreeCitation:
+          description: .
+          type: string
+          nullable: true
+          example: with Honours
+        degreeCode:
+          description: .
+          type: string
+          nullable: true
+        degreeConferralDate:
+          description: Date degree was (or will be?) conferred. This is an RFC3399 full-date, in YYYY-MM-DD format.
+          type: string
+          format: date
+          nullable: true
+          example: 2024-09-23
+        levelOfInstruction:
+          description: Indicates if this POSt is at the graduate or undergraduate level
+          type: string
+          enum: [G, U]
+        postCode:
+          description: .
+          type: string
+        postTitle:
+          description: .
+          type: string
+        requirementsSessionCode:
+          # ALL session codes are the same format: four-digit year, integer season, optional sub-session letter 20215[F|S|Y]
+          # not minimal
+          $ref: '#/components/schemas/SessionCode'
+        startSessionCode:
+          $ref: '#/components/schemas/SessionCode'
+        studentStatusCode:
+          description: .
+          type: string
+          nullable: false
+          enum: [ACT, WD, INA, CMP]
+
+    StudentSubjectPost:
+      description: These are known to students as POSTs, but are distinct from a StudentPost.
+      type: object
+      properties:
+        requirementsSessionCode:
+          # not minimal
+          $ref: '#/components/schemas/SessionCode'
+        startSessionCode:
+          $ref: '#/components/schemas/SessionCode'
+        studentStatusCode:
+          description: .
+          type: string
+          nullable: false
+          enum: [ACT, CMP, REF, INV, REQ]
+        subjPostCode:
+          description: .
+          type: string
+          nullable: false
+        subjPostTitle:
+          description: .
+          type: string
+          nullable: false
+
+    AcademicActivity:
+      description: A single course taken by the given student, or a single academic activity
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/BaseStudentCourse'
+        - type: object
+          required:
+            - activityType
+            - approvedByUserId
+            - attendanceStatus
+            - creditEarned
+            - creditWeight
+            - currentStatus
+            - departmentCode
+            - statusEffectiveDate
+            - sectionCode
+            - termLoad
+            - waitlistPosition
+          properties:
+            activityType:
+              description: .
+              type: string
+              enum: [COFEE, FLC]
+              # TODO enumerate all ~18 more values for AcademicActivity.activityType
+              nullable: false
+            approvedByUserId:
+              description: .
+              type: string
+              nullable: false
+              # TODO Can AcademicActivity.approvedByUserId be a number?
+            attendanceStatus:
+              description: |
+                Conditions under which the student is attending the course. Options are:
+
+                - CRE is
+                - EXT is
+                - ADD is
+                - CNX is
+                - AUD is auditing
+                - CNC is
+              type: string
+              enum: [CRE, EXT, ADD, CNX, AUD, CNC]
+              nullable: false
+            creditEarned:
+              description: .
+              type: string
+              nullable: false
+              # TODO Can AcademicActivity.creditEarned be a number?
+            creditWeight:
+              description: .
+              type: string
+              nullable: false
+              # TODO Can AcademicActivity.creditWeight be a number?
+              # TODO is AcademicActivity.creditWeight nullable?
+            currentStatus:
+              description: .
+              type: string
+              enum: [APP, WAIT, INT, REF, REQ, DROP]
+              nullable: false
+              # TODO is AcademicActivity.currentStatus nullable?
+            departmentCode:
+              description: .
+              type: string
+              nullable: false
+              # We can't make this an enum without making it a maintenance headache
+            enteredMark:
+              # not minimal
+              description: .
+              type: string
+              maxLength: 3
+              nullable: true
+            markPercentValue:
+              # not minimal
+              description: Mark, as an integer percentage
+              type: integer
+              minimum: 0
+              maximum: 100
+              nullable: true
+              example: 85
+            passedCourse:
+              description: .
+              type: boolean
+              nullable: true
+            postCode:
+              description: .
+              type: string
+              nullable: false
+              # TODO what is AcademicActivity.postCode in this context? Can we make this an enum?
+            sectionCode:
+              description: |
+                The most common section codes are F (fall), S (spring), and Y (full-year). In the context of summer sessions, these refer to First, Second, and full-term (Y) sessions. There are also a number of less-common codes.
+              type: string
+              minLength: 1
+              maxLength: 2
+              nullable: false
+            sectionNumber:
+              description: Generally, sectionNumber is not more than 5 characters, but can be up to 6.
+              type: string
+              minLength: 1
+              maxLength: 6
+              nullable: true
+              example: '01011'
+            statusEffectiveDate:
+              # TODO fix first sentence of description for AcademicActivity.statusEffectiveDate
+              description: Status effective date. This is an RFC3399 full-date, in the format YYYY-MM-DD.
+              type: string
+              format: date
+              nullable: false
+              example: 2024-09-23
+            symbolMark:
+              # not minimal
+              description: .
+              type: string
+              maxLength: 3
+              nullable: true
+            teachMethod:
+              description: Course teaching method. Valid values are LECture, TUTorial, and PRActical.
+              type: string
+              enum: [PRA, TUT, LEC]
+              nullable: true
+            termLoad:
+              description: .
+              type: number
+              minimum: 0
+              nullable: false
+              # TODO can we make AcademicActivity.termLoad a reference?
+              # $ref: '#/components/schemas/TermLoad'
+            waitlistPosition:
+              # not minimal
+              description: .
+              type: integer
+              minimum: 0
+              nullable: true
+              # TODO confirm AcademicActivity.waitlistPosition is nullable
+
+    StudentAdvancedStanding:
+      description: .
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/BaseStudentCourse'
+        - type: object
+          properties:
+            advancedStandType:
+              description: .
+              type: string
+              enum: [A, C, E, L, M, R, U, X]
+
+    StudentSubjectAdvancedStanding:
+      description: .
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/StudentAdvancedStanding'
+        - type: object
+          properties:
+            subjectLevel:
+              description: .
+              type: string
+            subjectCode:
+              description: .
+              type: string
+
+    TransferExclusions:
+      # TODO define the TransferExclusions object
+      description: .
+      type: object

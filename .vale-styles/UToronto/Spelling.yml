@@ -1,0 +1,20 @@
+---
+# Warning: UToronto.Spelling
+#
+# Checks for possible spelling mistakes in content, not code. Results from links using angle brackets (<https://example.com>) should be corrected.
+#
+# If a word is flagged as a spelling mistake incorrectly, such as a product name,
+# you can submit a PR to update `spelling-exceptions.txt` with the missing word.
+#
+# Commands, like `git clone`, must use backticks, and must not be added to the
+# exceptions.
+
+extends: spelling
+message: 'Spelling: "%s"?'
+level: warning
+custom: false
+code: false
+filters:
+  - '(?:\w*\.?)utoronto\.ca'
+ignore:
+  - UToronto/spelling-exceptions.txt

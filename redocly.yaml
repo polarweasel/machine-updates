@@ -1,0 +1,86 @@
+# Redocly CLI configuration overview: https://redocly.com/docs/cli/configuration/
+#
+# All built-in rules: https://redocly.com/docs/cli/rules/built-in-rules
+#
+# Rule reference: https://redocly.com/docs/cli/configuration/rules
+#
+# Reference for decorators, such as remove-x-internal (which is really just a special
+# case of `filter-out`): https://redocly.com/docs/cli/decorators
+
+extends:
+  - recommended
+
+# There's nothing special about these names, other than the `@version` on them,
+# which should be "latest" unless you have a really good reason to change it...
+apis:
+  external@latest:
+    root: ./api-specs/StudentRecords-v2.openapi.yaml
+    decorators:
+      remove-x-internal:
+        # This is the default flag property.
+        # You could also do this all in one line as `remove-x-internal: on`, like internal@latest below.
+        internalFlagProperty: 'x-internal'
+
+  internal@latest:
+    root: ./api-specs/StudentRecords-v2.openapi.yaml
+    decorators:
+      remove-x-internal: off
+
+rules:
+
+  # A sample custom rule. Read more about rules: https://redocly.com/docs/cli/rules/
+  rule/operation-summary:
+    subject:
+      type: Operation
+      property: summary
+    assertions:
+      defined: true
+      minLength: 10
+    severity: warn
+    message: This summary is very short. Is it long enough to be useful?
+
+  rule/operation-description:
+    subject:
+      type: Operation
+      property: description
+    assertions:
+      defined: true
+      minLength: 30
+    severity: warn
+    message: This description is quite short. Is it long enough to be useful?
+
+  rule/tag-name-and-desc-defined:
+    subject:
+      type: Tag
+      property:
+        - name
+        - description
+    assertions:
+      defined: true
+    severity: error
+    message: Every tag must have a name and description.
+
+  # don't use HTTP verbs (GET, POST, etc.) in paths
+  no-http-verbs-in-paths:
+    severity: error
+    splitIntoWords: true
+
+  # $refs must be fully OpenAPI compliant
+  spec-strict-refs: error
+
+  # This is a shorter version of the assert/operation-description rule defined above.
+  # Doing it this way means you don't get to specify length and other constraints.
+  # operation-description: warn
+
+theme:
+  openapi:
+    generateCodeSamples:
+      # (Pretty sure this option involves giving Redocly some cash)
+      # Available languages:
+      # curl, C#, JavaScript, Java, Java+Apache, Go, Node.js, PHP, Python, R, Ruby
+      languages:
+        - lang: curl
+          label: cURL command line
+        - lang: Node.js
+        - lang: Python
+        - lang: Go

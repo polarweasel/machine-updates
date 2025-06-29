@@ -1,0 +1,26 @@
+temp/
+dist/
+# until we have an actual build, we might not want to be ignoring dist!
+
+# If using npm:
+
+node_modules
+package-lock.json
+
+# If using Yarn:
+
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Swap the comments on the following lines if you wish to use zero-installs
+# In that case, don't forget to run `yarn config set enableGlobalCache false`!
+# Documentation here: https://yarnpkg.com/features/caching#zero-installs
+
+#!.yarn/cache
+.pnp.*
+
+.DS_Store

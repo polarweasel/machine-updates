@@ -1,0 +1,263 @@
+# Rule documentation: https://meta.stoplight.io/docs/spectral/01baf06bdd05a-create-a-ruleset
+#
+# Good inspiration sources for rules:
+#
+# Adidas https://github.com/adidas/api-guidelines/blob/master/.spectral.yml
+# Spectral https://docs.stoplight.io/docs/spectral/e5b9616d6d50c-rulesets
+# APIs You Won't Hate https://github.com/apisyouwonthate/style-guide/blob/main/src/ruleset.ts
+#
+# Severity level can be error, warn, info, hint, or off.
+#
+# VS Code doesn't show hint-level messages; use info instead.
+
+extends:
+  - https://raw.githubusercontent.com/azure/azure-api-style-guide/main/spectral.yaml
+    # This is the Azure API Style Guide ruleset
+  # - oas3
+    # This is the Spectral default OpenAPI 3.0 ruleset.
+
+rules:
+  #############################
+  # Overrides to existing rules
+  #############################
+
+  # az-boolean-naming-convention: warn
+
+  az-consistent-response-body: off # we'd rather see 201 CREATED have an empty response body
+
+  az-datetime-naming-convention: info # may not be ROSI-compatible
+
+  az-pagination-parameters: off
+
+  contact-properties: info # good to include contact info, but it's in APIM, so not crucial?
+
+  oas3-server-not-example.com: error # don't use example.com as a server
+
+  oas3-valid-media-example: error # media (application/json, etc.) examples must be valid
+  # Media type docs: https://swagger.io/docs/specification/v3_0/media-types/
+
+  oas3-valid-schema-example: error # schema examples must be valid
+
+  operation-singular-tag: off # multiple tags are fine
+
+  operation-success-response: error # every operation must have a 2xx response
+
+  operation-tags: error # if you don't tag it, you can't find it
+
+  #############################
+  # New EASI-specific rules
+  #############################
+
+  easi-auth-401-required:
+    message: Every operation that requires authentication MUST have a 401 response
+    description: |
+      Use the 401 status code to indicate that the client needs to authenticate to get the requested response. You use 401 in conjunction with the WWW-Authenticate header field.
+
+      For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401.
+    recommended: true
+    given: $.paths[*][*]
+    then:
+      field: responses.401
+      function: truthy
+    severity: error
+
+  easi-auth-no-http-basic:
+    # Adapted from APIs You Won't Hate
+    message: Please consider a more secure alternative to HTTP Basic Auth
+    description: |
+      HTTP Basic is an inherently insecure way to pass credentials to the API. They're placed in the URL in base64 which can be decrypted easily. Even if you're using a token, there are far better ways to handle passing tokens to an API which are less likely to leak.
+
+      See OWASP advice. https://github.com/OWASP/API-Security/blob/master/2019/en/src/0xa2-broken-user-authentication.md
+    recommended: true
+    given: $.components.securitySchemes[*]
+    then:
+      field: scheme
+      function: pattern
+      functionOptions:
+        notMatch: "basic"
+    severity: error
+
+  easi-hosts-https-only-oas2:
+    # Adapted from APIs You Won't Hate
+    message: Schemes MUST be https and no other protocol is allowed
+    description: |
+      Using http in production is reckless, advised against by OWASP API Security, and generally unnecessary thanks to free SSL on loads of hosts, gateways like Cloudflare, and OSS tools like Lets Encrypt.
+    given: $.schemes
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: array
+          items:
+            type: string
+            const: https
+    severity: error
+    formats: [oas2]
+
+  easi-hosts-https-only-oas3:
+    # Adapted from APIs You Won't Hate
+    message: Servers MUST be https and no other protocol is allowed
+    description: |
+      Using http in production is reckless, advised against by OWASP API Security, and generally unnecessary thanks to free SSL on loads of hosts, gateways like Cloudflare, and OSS tools like Lets Encrypt.
+    recommended: true
+    given: $.servers..url
+    then:
+      function: pattern
+      functionOptions:
+        match: "/^https:/"
+    formats: [oas3]
+    severity: error
+
+  easi-operation-description:
+    message: Every operation needs a description (min. 20 characters)
+    recommended: true
+    given: $.paths[*][*]
+    then:
+      field: description
+      function: length
+      functionOptions:
+        min: 20
+    severity: warn
+
+  easi-operation-summary:
+    message: Every operation needs a summary (min. 10 characters)
+    recommended: true
+    given: $.paths[*][*]
+    then:
+      field: summary
+      function: length
+      functionOptions:
+        min: 10
+    severity: warn
+
+  # easi-paths-health:
+  #   # Adapted from APIs You Won't Hate
+  #   message: APIs SHOULD have a health path (`/health`) defined
+  #   description: |
+  #     Creating a `/health` endpoint is a simple solution for pull-based monitoring and manually checking the status of an API. To learn more about health check endpoints see https://apisyouwonthate.com/blog/health-checks-with-kubernetes
+  #   recommended: true
+  #   given: $.paths
+  #   then:
+  #     field: /health
+  #     function: truthy
+  #   severity: info
+
+  easi-paths-root:
+    # Adapted from APIs You Won't Hate
+    message: APIs SHOULD have a root path (`/`) defined
+    description: |
+      Good documentation is always welcome, but API consumers should be able to get a pretty long way through interaction with the API alone. They should at least know they're looking at the right place instead of getting a 404 or random 500 error as is common in some APIs.
+
+      There are various efforts around to standardize the home document, but the best is probably this one: https://webconcepts.info/specs/IETF/I-D/nottingham-json-home"
+    recommended: true
+    given: $.paths
+    then:
+      field: /
+      function: truthy
+    severity: warn
+
+  easi-paths-root-get:
+    # Adapted from APIs You Won't Hate
+    message: APIs root path (`/`) SHOULD have a GET operation.
+    description: |
+      Good documentation is always welcome, but API consumers should be able to get a pretty long way through interaction with the API alone. They should at least know they're looking at the right place instead of getting a 404 or random 500 error as is common in some APIs.
+
+      There are various efforts around to standardize the home document, but the best is probably this one: https://webconcepts.info/specs/IETF/I-D/nottingham-json-home
+    recommended: true
+    given: $.paths[/]
+    then:
+      field: get
+      function: truthy
+    severity: warn
+
+  easi-request-GET-no-body-oas2:
+    # Adapted from APIs You Won't Hate
+    message: A GET request MUST NOT have a request body
+    description: |
+      Defining a request body on an HTTP GET is in some implementations, but is increasingly frowned upon due to the confusion that comes from unspecified behavior in the HTTP specification.
+    recommended: true
+    given: $.paths..get.parameters..in
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "/^body$/"
+    formats: [oas2]
+    severity: error
+
+  easi-request-GET-no-body-oas3:
+    # Adapted from APIs You Won't Hate
+    message: A GET request MUST NOT have a request body
+    description: |
+      Defining a request body on an HTTP GET is in some implementations, but is increasingly frowned upon due to the confusion that comes from unspecified behavior in the HTTP specification.
+    recommended: true
+    given: $.paths..get.requestBody
+    then:
+      function: undefined
+    formats: [oas3]
+    severity: error
+
+  easi-response-description:
+    message: Every response MUST have a description (min. 10 characters)
+    recommended: true
+    given: $.components.responses[*]
+    then:
+      field: description
+      function: length
+      functionOptions:
+        min: 10
+    severity: error
+
+  easi-response-standard-error-format:
+    # Adapted from APIs You Won't Hate
+    message: Error responses SHOULD use a standard error format
+    description: |
+      Error responses can be unique snowflakes, different with every API, but standards exist to make them consistent, which reduces surprises and increases interoperability.
+
+      Please use either the RFC 7807 problem+json (https://tools.ietf.org/html/rfc7807) or JSON:API Error (https://jsonapi.org/format/#error-objects) format.
+    given: $.paths[*]..responses[?(@property.match(/^(4|5)/))].content.*~
+    then:
+      function: enumeration
+      functionOptions:
+        values:
+          - application/vnd.api+json
+          - application/problem+json
+          - application/problem+xml
+    formats: [oas3]
+    severity: off # turned off since we're not using a standard error format
+
+  easi-schema-description:
+    message: Every schema object MUST have a description (min. 10 characters)
+    recommended: true
+    given: $.components.schemas[*]
+    then:
+      field: description
+      function: length
+      functionOptions:
+        min: 10
+    # severity should be error; setting to warn until we have fewer hits
+    severity: warn
+
+  easi-schema-property-description:
+    message: Every schema property MUST have a description (min. 10 characters)
+    recommended: true
+    given: $.components.schemas.[*].properties[*]
+    then:
+      field: description
+      function: length
+      functionOptions:
+        min: 10
+    # severity should be error; setting to warn until we have fewer hits
+    severity: warn
+
+  easi-tags-alphabetical:
+    message: Consider alphabetizing the `tags` list.
+    description: |
+      Some UIs display tags in spec order, and others let you customize. In general, you should alphabetize tags (and most everything else in the spec, really) unless you have a reason not to.
+    recommended: true
+    given: "$"
+    then:
+      field: tags
+      function: alphabetical
+      functionOptions:
+        keyedBy: name
+    severity: info

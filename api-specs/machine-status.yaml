@@ -1,47 +1,30 @@
 openapi: 3.0.3
 
 info:
-  title: Student Records API
+  title: Machine status API
 
-  description: |
-    The Student Records API provides access to student information, including academic activities, advanced standing, financial information, and more.
+  description: Helps to track status of networked machines.
 
-    **CAUTION** APIM doesn't return an HTTP 405 error code when a _method_ does not exist, but the _path_ does. There's no good workaround for this. Microsoft suggests (in [this blog post](https://techcommunity.microsoft.com/blog/azurepaasblog/azure-api-management-limitation-workaround-return-404-instead-of-405-when-the-ht/1588413)) implementing a silly policy hack such that APIM returns a 405 for a missing path (should be 404) _and_ for a missing method (405). This is also true for 501 (method not supported at all on the server), among others.
-
-  version: 2024-11-29-preview
+  version: "0.1"
 
   contact:
     # TODO add correct contact information
-    name: EASI API Support        # Don't put someone's name here!
-    email: email@example.com      # Email should be a group alias
-    url: 'https://example.com/'   # Maybe have an ESC form linked here?
+    name: Alex Ball
+    email: awball@polarweasel.org
+    url: 'https://polarweasel.org/'
 
 security:
-  - OAuth2: ['read']
-  - x-token: []
   - authorization: []
 
 servers:
-  - url: https://n301-easi-api-mgmt-dev.azure-api.net/studentRecords
-    description: Development server
-  - url: https://p301-easi-api-mgmt-prod.azure-api.net/studentRecords
+  - url: https://example.com
     description: Production server
 
 tags:
-  - name: Academic Activities
-    description: Operations related to a student's courses and other academic activities
-  - name: Advanced Standing
-    description: Operations related to a student's advanced standing
   - name: API Info
-    description: Operations related to the API itself
-  - name: EASI-Internal
-    description: Operations used for inter-microservice communication. Potentially useful to non-EASI developers, as well.
-  - name: Financial
-    description: Operations related to a student's financial information
-  - name: Profile
-    description: Operations related to a student's profile
-  - name: Registration
-    description: Operations related to a student's registration
+    description: Information about the API itself
+  - name: Tag1
+    description: Operations related to ...
 
 paths:
   /:
@@ -57,16 +40,11 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/ApiInfo'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         default:
           $ref: '#/components/responses/InternalServerError'
 
-
-  '/students':
+  '/machines':
     get:
-      # This is a replacement for the on-prem API documented here:
-      # https://its-uoft.atlassian.net/wiki/spaces/EASI/pages/11602438/Student+Records+Web+Service
       summary: Search for students
       description: |
         Returns a list of students matching the specified criteria.
@@ -75,7 +53,7 @@ paths:
 
         **Note**: To search for a single-character first name, you must also include the `lastName` query parameter.
       tags:
-        - Profile
+        - Tag1
       operationId: Student_list
       parameters:
         - $ref: '#/components/parameters/searchLastName'
@@ -120,7 +98,7 @@ paths:
         default:
           $ref: '#/components/responses/InternalServerError'
 
-  '/students/{studentId}':
+  '/machines/{machineId}':
     get:
       summary: Get student information
       description: |
@@ -132,10 +110,10 @@ paths:
 
       # TODO Once the description is finalized for StudentProfile_list, adjust this one to match
       tags:
-        - Profile
+        - Tag1
       operationId: Student_get
       parameters:
-        - $ref: '#/components/parameters/studentId'
+        - $ref: '#/components/parameters/machineId'
         - $ref: '#/components/parameters/includeAllActivities'
         - $ref: '#/components/parameters/includeGradData'
         - $ref: '#/components/parameters/includeNonDegreePosts'
@@ -162,376 +140,6 @@ paths:
         default:
           $ref: '#/components/responses/InternalServerError'
 
-  '/students/{studentId}/advanced-standings':
-    get:
-      summary: Get advanced standing
-      description: |
-        Returns the specified student's advanced standing details.
-
-        Objects in the returned `AdvancedStanding` object include all fields. You don't need to use the `includeOptionalFields` query parameter.
-      tags:
-        - Advanced Standing
-      operationId: AdvancedStanding_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-        - $ref: '#/components/parameters/sessionId'
-      responses:
-        '200':
-          description: Requested advanced standing details successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdvancedStanding'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/courses':
-    get:
-      summary: Get student's courses
-      description: |
-        Returns the specified student's course information.
-
-        By default, the `StudentCourse` objects in the returned `Courses` object includes all properties **except** `enteredMark`, `markPercentValue`, `symbolMark`, and `waitlistPosition`. Use the `includeOptionalFields` query parameter to include these.
-      tags:
-        - Academic Activities
-      operationId: Courses_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-        - $ref: '#/components/parameters/sessionId'
-        - $ref: '#/components/parameters/includeOptionalFields'
-      responses:
-        '200':
-          description: Requested course information successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AcademicActivities'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/advanced-credits-earned':
-    get:
-      summary: Get advanced credits earned
-      description: |
-        Retrieves the specified student's advanced credits earned. EASI internal use only.
-
-        Includes only advanced credits. For cumulative credits, use `/students/{studentId}/course-credits-earned`.
-      tags:
-        - Academic Activities
-        - Advanced Standing
-        - EASI-Internal
-      operationId: AdvancedCreditsEarned_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-      responses:
-        '200':
-          description: Requested student advanced credit details successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AdvancedCreditsEarned'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/course-credits-earned':
-    get:
-      summary: Get credits earned
-      description: |
-        Retrieves the specified student's credits earned. Includes cumulative and advanced credits. EASI internal use only.
-
-        To retrieve advanced credits earned, use `/students/{studentId}/advanced-credits-earned`.
-      tags:
-        - Academic Activities
-        - EASI-Internal
-      operationId: CourseCreditsEarned_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-      responses:
-        '200':
-          description: Requested student earned credit details successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreditsEarned'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/course-term-loads':
-    get:
-      summary: Get a student's term load
-      description: |
-        Returns the specified student's term load. EASI internal use only.
-
-        The University defines a full course load as 2.5 credits per term.
-
-        A full course offered in one term has a load of 1.0, while that same full course offered offered over two terms would have a term load of 0.5 in each term. A half course offered over two terms would have a term load of 0.25 in each term.
-      tags:
-        - Academic Activities
-        - EASI-Internal
-      operationId: TermLoad_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-      responses:
-        '200':
-          description: Requested student term load details successfully retrieved.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/CourseTermLoad'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/current-course-load':
-    get:
-      summary: Get current course load
-      description: Returns the specified student's current course load. EASI internal use only. This is the sum of all items returned by `GET /students/{studentId}/course-term-loads`.
-      tags:
-        - Academic Activities
-        - EASI-Internal
-      operationId: CurrentCourseLoad_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-      responses:
-        '200':
-          description: Requested student course load successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CurrentCourseLoad'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/financial':
-    get:
-      summary: Get financial information
-      description: |
-        Returns the specified student's financial information.
-
-        By default, the returned `Financial` object includes the `accountBalance` property. Use the `includeOptionalFields` query parameter to include the `missingSin` property.
-      tags:
-        - Financial
-      operationId: FinancialInfo_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-        - $ref: '#/components/parameters/includeOptionalFields'
-      responses:
-        '200':
-          description: Requested student financial information successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Financial'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/profile':
-    get:
-      summary: Get student's profile
-      description: |
-        Returns the specified student's profile.
-
-        Use the `includeOptionalFields` query parameter to include `transcriptHold` and `trespass`.
-
-        The following fields are specific to graduate students:
-
-          * admissionDate
-          * candidacyAchieved
-          * gradFunding
-          * thesisTitle
-
-        The following fields are considered sensitive PII, and require additional authorization. Use the `includeSensitiveFields` query parameter to include these fields:
-
-          * birthDate
-          * citizenship
-          * legalStatus
-
-        **Note**: Properties that start with `current` in the Profile object (such as `currentStatus`) are based on the registration associated with the _most recent session_. If the student has a registration for an upcoming session, use the `useFutureRegistration` query parameter to base these properties on that registration. For example, you would use this query parameter with a final-year undergraduate student who has already registered for a master's degree program. If you didn't use the parameter, you wouldn't see any master's information.
-      tags:
-        - Profile
-      operationId: StudentProfile_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-        - $ref: '#/components/parameters/includeOptionalFields'
-        - $ref: '#/components/parameters/includeSensitiveFields'
-        - $ref: '#/components/parameters/useFutureRegistration'
-      responses:
-        '200':
-          description: Requested student profile successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/registration-profile':
-    # TODO This is brand-new (Nov 29). Most of what's here is likely to be WRONG. :)
-    get:
-      summary: Get student's registration profile
-      description: |
-        Returns the specified student's registration profile. This is a subset of the full Profile object, applicable to the current registration only.
-
-        Use the `includeOptionalFields` query parameter to include `transcriptHold` and `trespass`.
-
-        The following fields are specific to graduate students:
-
-          * admissionDate
-          * candidacyAchieved
-          * gradFunding
-          * thesisTitle
-
-        The following fields are considered sensitive PII, and require additional authorization. Use the `includeSensitiveFields` query parameter to include these fields:
-
-          * birthDate
-          * citizenship
-          * legalStatus
-
-        **Note**: Properties that start with `current` in the Profile object (such as `currentStatus`) are based on the registration associated with the _most recent session_. If the student has a registration for an upcoming session, use the `useFutureRegistration` query parameter to base these properties on that registration. For example, you would use this query parameter with a final-year undergraduate student who has already registered for a master's degree program. If you didn't use the parameter, you wouldn't see any master's information.
-      tags:
-        - Profile
-        - Registration
-      operationId: StudentRegistrationProfile_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-        - $ref: '#/components/parameters/includeOptionalFields'
-        - $ref: '#/components/parameters/includeSensitiveFields'
-        - $ref: '#/components/parameters/useFutureRegistration'
-      responses:
-        '200':
-          description: Requested student registration profile successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
-  '/students/{studentId}/registrations':
-    get:
-      summary: Get registration details
-      description: |
-        Returns the specified student's registration information.
-
-        By default, the returned RegProgram object includes all properties **except** `degreeRequests`. Use the `includeOptionalFields` query parameter to include this property.
-      tags:
-        - Registration
-      operationId: Registrations_list
-      parameters:
-        - $ref: '#/components/parameters/studentId'
-        - $ref: '#/components/parameters/sessionId'
-        - $ref: '#/components/parameters/includeOptionalFields'
-      responses:
-        '200':
-          description: Requested student registration information successfully retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegProgram'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/InternalServerError'
-
   /version:
     get:
       summary: Get API version
@@ -542,8 +150,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/ApiInfo'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         default:
           $ref: '#/components/responses/InternalServerError'
 
@@ -669,9 +275,9 @@ components:
       schema:
         $ref: '#/components/schemas/SessionCode'
 
-    studentId:
+    machineId:
       description: Unique identifier for a student. This can be either a UTORid or a Person ID.
-      name: studentId
+      name: machineId
       in: path
       required: true
       schema:

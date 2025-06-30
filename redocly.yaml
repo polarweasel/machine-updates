@@ -14,7 +14,7 @@ extends:
 # which should be "latest" unless you have a really good reason to change it...
 apis:
   external@latest:
-    root: ./api-specs/StudentRecords-v2.openapi.yaml
+    root: ./api-specs/machine-status.yaml
     decorators:
       remove-x-internal:
         # This is the default flag property.
@@ -22,7 +22,7 @@ apis:
         internalFlagProperty: 'x-internal'
 
   internal@latest:
-    root: ./api-specs/StudentRecords-v2.openapi.yaml
+    root: ./api-specs/machine-status.yaml
     decorators:
       remove-x-internal: off
 

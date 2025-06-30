@@ -1,0 +1,18 @@
+# Configuration file for machine-status client
+
+# Interface to parse ip address. Default is wlan0
+interface = "eth0"
+
+# Server web port. Default is 80
+machine_status_port = 8080
+
+# Server IP. Default 127.0.0.1 (localhost)
+machine_status_ip = "127.0.0.1"
+
+# Rotation indicator. Set 1 for 180 degrees rotation. Default is 0
+is_rotated = 1
+
+# Screen selection. Supported screens:
+# 213v2 | Waveshare 2.13 BW V2
+# 213v3 | Waveshare 2.13 BW V3
+screen_type = "215g"

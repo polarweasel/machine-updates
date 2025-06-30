@@ -58,6 +58,29 @@ paths:
         default:
           $ref: '#/components/responses/InternalServerError'
 
+    put:
+      summary: Update the specified machine status
+      description: Updates the status of the specified machine, creating a new record if this is a new machine.
+      tags:
+        - Machine info
+      operationId: updateMachine
+      parameters:
+        - $ref: '#/components/parameters/machineId'
+      requestBody:
+        description: .
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Machine'
+      responses:
+        '201':
+          $ref: '#/components/responses/Machine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        default:
+          $ref: '#/components/responses/InternalServerError'
+
   /version:
     get:
       summary: Get API version
@@ -142,7 +165,6 @@ components:
           schema:
             $ref: '#/components/schemas/Machine'
 
-
     MachineCollection:
       description: Status info for all known machines
       content:
@@ -163,6 +185,21 @@ components:
                   - happy
                   - missing-machine
                   - oh-shit
+
+    BadRequest:
+      description: |
+        Bad request.
+
+        Something's not right in the data you're sending. Check the format of everything and try again.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            type: https://example.com/docs/errors/bad-request
+            title: Bad request
+            detail: 'machineStatus.diskFree.freeSpace.freeSpacePercentage: value out of range'
 
     NotFound:
       description: Not found.

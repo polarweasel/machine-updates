@@ -26,7 +26,7 @@ tags:
     description: Information about a specific machine, or all machines
 
 paths:
-  /:
+  /machines:
     get:
       summary: Get status for all machines
       description: Returns the status of all machines, or 404 if no machines have reported status.
@@ -41,7 +41,7 @@ paths:
         default:
           $ref: '#/components/responses/InternalServerError'
 
-  /{machineId}:
+  /machines/{machineId}:
     get:
       summary: Get status for a single machine
       description: Returns the status of the specified machine, or 404 if the machine is unknown.
@@ -90,12 +90,6 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 components:
-# Some useful reference docs for OpenAPI 3.0 and 3.1...
-#
-# String formats and validation: https://www.apimatic.io/openapi/string-type-format
-#
-# OpenAPI 3.0 data types: https://swagger.io/docs/specification/data-models/data-types/
-
   securitySchemes:
     # TODO Add a real security scheme. This section is currently 100% boilerplate!
     x-token:

@@ -20,10 +20,16 @@ And every time you regenerate it, you need to fix the `import` statement in `mai
 
 ## Python client
 
-To generate the sample Python client from the API spec:
+The client and configuration file are in `/client`. This should be ready to go once the server exists. It does send valid output according to the mocking server, at least!
+
+## Mocking server
+
+This is why Redocly is included in this repo...
 
 ```bash
-java -jar ../swagger-codegen/swagger-codegen-cli.jar generate -i api-specs/machine-status.yaml -l python -o python-client
-```
+# Pick up the current changes to the API spec
+npm run bundle-internal
 
-...And then god help us, it looks like a lot of work to make anything happen after that. ;-)
+# Run the mocking server
+npm run mock-internal
+```

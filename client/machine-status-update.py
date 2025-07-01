@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# machine-status testing
+# machine-status updater
 
 #import subprocess
 import socket

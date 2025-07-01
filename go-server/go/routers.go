@@ -58,7 +58,7 @@ var routes = Routes{
 	Route{
 		"APIVersionList",
 		strings.ToUpper("Get"),
-		"/machine-status/version",
+		"/machine-status/",
 		APIVersionList,
 	},
 
@@ -74,6 +74,13 @@ var routes = Routes{
 		strings.ToUpper("Get"),
 		"/machine-status/machines/{machineId}",
 		GetMachine,
+	},
+
+	Route{
+		"UpdateMachine",
+		strings.ToUpper("Put"),
+		"/machine-status/machines/{machineId}",
+		UpdateMachine,
 	},
 
 	Route{

@@ -11,9 +11,9 @@ package swagger
 
 type Machine struct {
 
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Optional description of the machine (not useful in a small UI)
 	MachineDescription string `json:"machineDescription,omitempty"`
 
-	MachineStatus *MachineMachineStatus `json:"machineStatus,omitempty"`
+	MachineStatus *MachineMachineStatus `json:"machineStatus"`
 }

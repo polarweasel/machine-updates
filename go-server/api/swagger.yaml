@@ -10,8 +10,6 @@ info:
 servers:
 - url: http://pi-hole4/machine-status
   description: Production server
-security:
-- authorization: []
 tags:
 - name: API info
   description: Information about the API itself
@@ -36,7 +34,7 @@ paths:
         "404":
           description: Not found.
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
@@ -46,7 +44,7 @@ paths:
         default:
           description: Internal server error.
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
@@ -64,13 +62,14 @@ paths:
       - name: machineId
         in: path
         description: |
-          Unique identifier for a machine. This should be the machine's DNS name, optionally as a fully-qualified domain name (FQDN).
+          Unique identifier for a machine. This should be the machine's hostname, optionally as a fully-qualified domain name (FQDN). Maximum length is 256 characters.
 
           (Nothing is stopping us from naming two machines the same thing, nor from providing other irritating names, but let's not make our lives difficult here.)
         required: true
         style: simple
         explode: false
         schema:
+          maxLength: 256
           pattern: "^[A-Za-z][A-Za-z0-9\\.-]+$"
           type: string
           description: Name of the machine
@@ -89,7 +88,7 @@ paths:
         "404":
           description: Not found.
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
@@ -99,13 +98,74 @@ paths:
         default:
           description: Internal server error.
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
                 status: 500
                 title: Internal server error
-  /version:
+    put:
+      tags:
+      - Machine info
+      summary: Update the specified machine status
+      description: "Updates the status of the specified machine, creating a new record\
+        \ if this is a new machine."
+      operationId: updateMachine
+      parameters:
+      - name: machineId
+        in: path
+        description: |
+          Unique identifier for a machine. This should be the machine's hostname, optionally as a fully-qualified domain name (FQDN). Maximum length is 256 characters.
+
+          (Nothing is stopping us from naming two machines the same thing, nor from providing other irritating names, but let's not make our lives difficult here.)
+        required: true
+        style: simple
+        explode: false
+        schema:
+          maxLength: 256
+          pattern: "^[A-Za-z][A-Za-z0-9\\.-]+$"
+          type: string
+          description: Name of the machine
+        examples:
+          name_example:
+            value: tiny-mines
+          fqdn_example:
+            value: tiny-mines.example.com
+      requestBody:
+        description: "."
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Machine"
+        required: true
+      responses:
+        "201":
+          description: Returns 201 on success with no response body
+        "400":
+          description: |
+            Bad request.
+
+            Something's not right in the data you're sending. Check the format of everything and try again.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 400
+                type: https://example.com/docs/errors/bad-request
+                title: Bad request
+                detail: "machineStatus.diskFree.freeSpace.freeSpacePercentage: value\
+                  \ out of range"
+        default:
+          description: Internal server error.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: 500
+                title: Internal server error
+  /:
     get:
       tags:
       - API info
@@ -124,7 +184,7 @@ paths:
         default:
           description: Internal server error.
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
@@ -152,7 +212,7 @@ paths:
         default:
           description: Internal server error.
           content:
-            application/json:
+            application/problem+json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
               example:
@@ -161,6 +221,9 @@ paths:
 components:
   schemas:
     Machine:
+      required:
+      - machineStatus
+      - name
       type: object
       properties:
         name:
@@ -338,10 +401,25 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/inline_response_200_1"
+    BadRequest:
+      description: |
+        Bad request.
+
+        Something's not right in the data you're sending. Check the format of everything and try again.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 400
+            type: https://example.com/docs/errors/bad-request
+            title: Bad request
+            detail: "machineStatus.diskFree.freeSpace.freeSpacePercentage: value out\
+              \ of range"
     NotFound:
       description: Not found.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
@@ -351,7 +429,7 @@ components:
     InternalServerError:
       description: Internal server error.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
@@ -362,13 +440,14 @@ components:
       name: machineId
       in: path
       description: |
-        Unique identifier for a machine. This should be the machine's DNS name, optionally as a fully-qualified domain name (FQDN).
+        Unique identifier for a machine. This should be the machine's hostname, optionally as a fully-qualified domain name (FQDN). Maximum length is 256 characters.
 
         (Nothing is stopping us from naming two machines the same thing, nor from providing other irritating names, but let's not make our lives difficult here.)
       required: true
       style: simple
       explode: false
       schema:
+        maxLength: 256
         pattern: "^[A-Za-z][A-Za-z0-9\\.-]+$"
         type: string
         description: Name of the machine

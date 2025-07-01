@@ -225,6 +225,9 @@ components:
   schemas:
     Machine:
       type: object
+      required:
+        - name
+        - machineStatus
       properties:
         name:
           $ref: '#/components/schemas/MachineName'

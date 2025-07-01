@@ -20,7 +20,7 @@ import (
 	//
 	//    sw "github.com/myname/myrepo/go"
 	//
-	sw "polarweasel/go-server"
+	sw "polarweasel/machine-updates/go"
 )
 
 func main() {

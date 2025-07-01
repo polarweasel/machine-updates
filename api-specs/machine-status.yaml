@@ -12,8 +12,7 @@ info:
     email: awball@polarweasel.org
     url: 'https://polarweasel.org/'
 
-security:
-  - authorization: []
+security: []
 
 servers:
   - url: http://pi-hole4/machine-status
@@ -75,13 +74,13 @@ paths:
               $ref: '#/components/schemas/Machine'
       responses:
         '201':
-          $ref: '#/components/responses/Machine'
+          description: Returns 201 on success with no response body
         '400':
           $ref: '#/components/responses/BadRequest'
         default:
           $ref: '#/components/responses/InternalServerError'
 
-  /version:
+  /:
     get:
       summary: Get API version
       description: Returns the current version of the API. Call this to verify the API is alive.
@@ -129,7 +128,7 @@ components:
   parameters:
     machineId:
       description: |
-        Unique identifier for a machine. This should be the machine's DNS name, optionally as a fully-qualified domain name (FQDN).
+        Unique identifier for a machine. This should be the machine's hostname, optionally as a fully-qualified domain name (FQDN). Maximum length is 256 characters.
 
         (Nothing is stopping us from naming two machines the same thing, nor from providing other irritating names, but let's not make our lives difficult here.)
       name: machineId
@@ -139,6 +138,7 @@ components:
         type: string
         description: Name of the machine
         pattern: '^[A-Za-z][A-Za-z0-9\.-]+$'
+        maxLength: 256
       examples:
         name_example:
           value: 'tiny-mines'
@@ -192,7 +192,7 @@ components:
 
         Something's not right in the data you're sending. Check the format of everything and try again.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
@@ -204,7 +204,7 @@ components:
     NotFound:
       description: Not found.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:
@@ -215,7 +215,7 @@ components:
     InternalServerError:
       description: Internal server error.
       content:
-        application/json:
+        application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
           example:

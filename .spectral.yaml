@@ -11,9 +11,9 @@
 # VS Code doesn't show hint-level messages; use info instead.
 
 extends:
-  - https://raw.githubusercontent.com/azure/azure-api-style-guide/main/spectral.yaml
+  # - https://raw.githubusercontent.com/azure/azure-api-style-guide/main/spectral.yaml
     # This is the Azure API Style Guide ruleset
-  # - oas3
+  - spectral:oas
     # This is the Spectral default OpenAPI 3.0 ruleset.
 
 rules:
@@ -54,11 +54,11 @@ rules:
 
   # az-boolean-naming-convention: warn
 
-  az-consistent-response-body: off # we'd rather see 201 CREATED have an empty response body
+  # az-consistent-response-body: off # we'd rather see 201 CREATED have an empty response body
 
-  az-datetime-naming-convention: info # may not be ROSI-compatible
+  # az-datetime-naming-convention: info # may not be ROSI-compatible
 
-  az-pagination-parameters: off
+  # az-pagination-parameters: off
 
   contact-properties: info # good to include contact info, but it's in APIM, so not crucial?
 
@@ -79,18 +79,18 @@ rules:
   # New EASI-specific rules
   #############################
 
-  easi-auth-401-required:
-    message: Every operation that requires authentication MUST have a 401 response
-    description: |
-      Use the 401 status code to indicate that the client needs to authenticate to get the requested response. You use 401 in conjunction with the WWW-Authenticate header field.
-
-      For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401.
-    recommended: true
-    given: $.paths[*][*]
-    then:
-      field: responses.401
-      function: truthy
-    severity: error
+#   easi-auth-401-required:
+#     message: Every operation that requires authentication MUST have a 401 response
+#     description: |
+#       Use the 401 status code to indicate that the client needs to authenticate to get the requested response. You use 401 in conjunction with the WWW-Authenticate header field.
+#
+#       For more information, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401.
+#     recommended: true
+#     given: $.paths[*][*]
+#     then:
+#       field: responses.401
+#       function: truthy
+#     severity: error
 
   easi-auth-no-http-basic:
     # Adapted from APIs You Won't Hate
@@ -108,36 +108,36 @@ rules:
         notMatch: "basic"
     severity: error
 
-  easi-hosts-https-only-oas2:
-    # Adapted from APIs You Won't Hate
-    message: Schemes MUST be https and no other protocol is allowed
-    description: |
-      Using http in production is reckless, advised against by OWASP API Security, and generally unnecessary thanks to free SSL on loads of hosts, gateways like Cloudflare, and OSS tools like Lets Encrypt.
-    given: $.schemes
-    then:
-      function: schema
-      functionOptions:
-        schema:
-          type: array
-          items:
-            type: string
-            const: https
-    severity: error
-    formats: [oas2]
+  # easi-hosts-https-only-oas2:
+  #   # Adapted from APIs You Won't Hate
+  #   message: Schemes MUST be https and no other protocol is allowed
+  #   description: |
+  #     Using http in production is reckless, advised against by OWASP API Security, and generally unnecessary thanks to free SSL on loads of hosts, gateways like Cloudflare, and OSS tools like Lets Encrypt.
+  #   given: $.schemes
+  #   then:
+  #     function: schema
+  #     functionOptions:
+  #       schema:
+  #         type: array
+  #         items:
+  #           type: string
+  #           const: https
+  #   severity: error
+  #   formats: [oas2]
 
-  easi-hosts-https-only-oas3:
-    # Adapted from APIs You Won't Hate
-    message: Servers MUST be https and no other protocol is allowed
-    description: |
-      Using http in production is reckless, advised against by OWASP API Security, and generally unnecessary thanks to free SSL on loads of hosts, gateways like Cloudflare, and OSS tools like Lets Encrypt.
-    recommended: true
-    given: $.servers..url
-    then:
-      function: pattern
-      functionOptions:
-        match: "/^https:/"
-    formats: [oas3]
-    severity: error
+#   easi-hosts-https-only-oas3:
+#     # Adapted from APIs You Won't Hate
+#     message: Servers MUST be https and no other protocol is allowed
+#     description: |
+#       Using http in production is reckless, advised against by OWASP API Security, and generally unnecessary thanks to free SSL on loads of hosts, gateways like Cloudflare, and OSS tools like Lets Encrypt.
+#     recommended: true
+#     given: $.servers..url
+#     then:
+#       function: pattern
+#       functionOptions:
+#         match: "/^https:/"
+#     formats: [oas3]
+#     severity: error
 
   easi-operation-description:
     message: Every operation needs a description (min. 20 characters)

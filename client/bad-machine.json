@@ -1,0 +1,19 @@
+{
+  "name": "tiny-plex",
+  "machineDescription": "This should be invalid",
+  "machineStatus": {
+    "loadAverages": {
+      "load-1": 0,
+      "load-5": 0,
+      "load-15": -1,
+      "problemFlag": false
+    },
+    "diskFree": {
+      "mountPoint": "/",
+      "freeSpace": {
+        "freeSpacePercentage": 101,
+        "problemFlag": false
+      }
+    }
+  }
+}

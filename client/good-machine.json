@@ -1,0 +1,19 @@
+{
+  "name": "tiny-mines",
+  "machineDescription": "This is valid input",
+  "machineStatus": {
+    "loadAverages": {
+      "load-1": 0.25,
+      "load-5": 0,
+      "load-15": 3,
+      "problemFlag": false
+    },
+    "diskFree": {
+      "mountPoint": "/",
+      "freeSpace": {
+        "freeSpacePercentage": 75,
+        "problemFlag": false
+      }
+    }
+  }
+}

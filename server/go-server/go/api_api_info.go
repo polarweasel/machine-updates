@@ -10,10 +10,14 @@
 package swagger
 
 import (
+	"fmt"
 	"net/http"
 )
+
+const APIVersion string = "0.1"
 
 func APIVersionList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "API version %s\n", APIVersion)
 }

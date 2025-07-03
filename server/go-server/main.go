@@ -23,8 +23,10 @@ import (
 	sw "polarweasel/machine-updates/go"
 )
 
+const APIVersion string = "0.01"
+
 func main() {
-	log.Printf("Server started")
+	log.Printf("Server started, API version %s", APIVersion)
 
 	router := sw.NewRouter()
 

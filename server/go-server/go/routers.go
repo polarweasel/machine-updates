@@ -48,12 +48,12 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 var routes = Routes{
-	Route{
-		"Index",
-		"GET",
-		"/machine-status/",
-		Index,
-	},
+	//	Route{
+	//		"Index",
+	//		"GET",
+	//		"/machine-status/",
+	//		Index,
+	//	},
 
 	Route{
 		"APIVersionList",

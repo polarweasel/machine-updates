@@ -19,12 +19,8 @@ from datetime import datetime
 load_flag = False      # True if load averages are too high
 diskfree_flag = False  # True if disk free space is too low
 
-base_address = "http://localhost:4010"
-status_address = base_address + "/"
-vibe_address = base_address + "/vibe"
-all_machines_address = base_address + "/machines"
+# base_address = "http://localhost:4010"
 hostname = socket.gethostname() # This machine's hostname
-one_machine_address = base_address + "/machines/" + hostname
 
 CONFIG_FILENAME = "config.toml"
 
@@ -32,6 +28,8 @@ CONFIG_FILENAME = "config.toml"
 def read_config():
     try:
         CONFIG = toml.load(CONFIG_FILENAME, _dict=dict)
+        base_address = "http://" + CONFIG["machine_status_ip"] + ":" + CONFIG["machine_status_port"] + "/machine-status"
+        # print(f"base_address is {base_address}")
         mountpoint = CONFIG["mountpoint"]
         min_free_space = CONFIG["min_free_space"]
         max_load_avg = CONFIG["max_load_avg"]
@@ -39,7 +37,7 @@ def read_config():
         output_error = f"Config can't be parsed! Please check config file. Error: {str(e)}"
         sys.exit(output_error)
 
-    return mountpoint, min_free_space, max_load_avg
+    return base_address, mountpoint, min_free_space, max_load_avg
 
 # Get load averages
 def get_load_avgs():
@@ -134,7 +132,12 @@ def make_request():
         output_error = f"Error in PUT attempt: {str(e)}"
         sys.exit(output_error)
 
-mountpoint, min_free_space, max_load_avg = read_config()
+base_address, mountpoint, min_free_space, max_load_avg = read_config()
+
+status_address = base_address + "/"
+vibe_address = base_address + "/vibe"
+all_machines_address = base_address + "/machines"
+one_machine_address = base_address + "/machines/" + hostname
 
 load_one, load_five, load_fifteen, load_flag = get_load_avgs()
 

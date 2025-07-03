@@ -13,4 +13,4 @@ max_load_avg = 3
 machine_status_ip = "127.0.0.1"
 
 # Server web port. Default is 80
-machine_status_port = 8080
+machine_status_port = "8080"

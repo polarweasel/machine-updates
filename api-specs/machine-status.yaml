@@ -237,6 +237,9 @@ components:
           nullable: true
         machineStatus:
           type: object
+          required:
+            - loadAverages
+            - diskFree
           properties:
             loadAverages:
               $ref: '#/components/schemas/LoadAverages'

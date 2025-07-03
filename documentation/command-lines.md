@@ -10,17 +10,29 @@ Here are some useful commands you can cut and paste.
 
 ## Redocly commands
 
+View generated docs:
+
 ```sh
 redocly preview-docs internal@latest
 ```
+
+Run a live-reload mocking server, including anything marked `x-internal`:
+
+```sh
+npm run mock-internal
+```
+
+Bundle the spec without anything marked `x-internal`:
 
 ```sh
 redocly bundle external@latest \
         --output dist/external.yaml
 ```
 
+Bundle the spec, including stuff marked `internal`:
+
 ```sh
-redocly split api-specs/studentRecords-v2.openapi.yaml \
+redocly split api-specs/machine-status.yaml \
         --outDir temp/internal-split/
 ```
 
@@ -32,18 +44,18 @@ Lint a spec:
 spectral lint temp/internal-split/openapi.yaml
 ```
 
-Run a live-reload mocking server:
+**Prism:** Run a live-reload mocking server:
 
 ```sh
-prism mock api-specs/studentRecords-v2.openapi.yaml
+prism mock api-specs/machine-status.yaml
 ```
 
-Provide the auth headers with your request:
+**Not applicable to machine-status API** Provide the auth headers with your request:
 
 ```sh
 curl --header "x-token: token" \
      --header "authorization: Bearer token" \
-     http://127.0.0.1:4010/students/1/profile
+     http://127.0.0.1:4010/vibe
 ```
 
 Optionally, save a step negotiation media types and include an `accept` header:
@@ -52,7 +64,7 @@ Optionally, save a step negotiation media types and include an `accept` header:
 curl --header "accept: application/json" \
      --header "x-token: token" \
      --header "authorization: Bearer token" \
-     http://127.0.0.1:4010/students/1/profile
+     http://127.0.0.1:4010/vibe
 ```
 
 Here's the OpenAPI pet store to show validation of requests and responses:
@@ -67,20 +79,24 @@ curl -s -D "/dev/stderr" \
 
 ### Other commands
 
+Tell curl to make a PUT request, instead of POST, by using the -T argument to upload from a file:
+
+```sh
+curl -T good-machine.json \
+     -H "Content-Type: application/json" \
+     http://localhost:4010/machines/tiny-mines
+```
+
 Use the [jq utility](https://jqlang.github.io/jq/) to pretty-print the JSON response from an API call:
 
 ```sh
 curl -s --header "accept: application/json" \
-     --header "x-token: token" \
-     --header "authorization: Bearer token" \
-     http://127.0.0.1:4010/students/1/profile | jq
+     http://127.0.0.1:4010/machines | jq
 ```
 
 Use the [yq utility](https://mikefarah.gitbook.io/yq) to convert the JSON response from an API call to YAML and pretty-print it:
 
 ```sh
 curl -s --header "accept: application/json" \
-     --header "x-token: token" \
-     --header "authorization: Bearer token" \
-     http://127.0.0.1:4010/students/1/profile | yq -p json
+     http://127.0.0.1:4010/machines | yq -p json
 ```

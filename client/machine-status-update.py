@@ -41,12 +41,14 @@ def read_config():
 
 # Get load averages
 def get_load_avgs():
+    # Get system load averages. If any are higher than the warning threshold, raise the flag.
+    # (load_flag corresponds to machineStatus.loadAverages.problemFlag in the JSON payload)
     try:
         loads = os.getloadavg()
-        load_one = loads[0]
-        load_five = loads[1]
-        load_fifteen = loads[2]
-        loads = f"Load average: {load_one:.2f}, {load_five:.2f}, {load_fifteen:.2f}"
+        load_one = round(loads[0], 2)
+        load_five = round(loads[1], 2)
+        load_fifteen = round(loads[2], 2)
+        # loads = f"Load average: {load_one:.2f}, {load_five:.2f}, {load_fifteen:.2f}"
 
         if load_one > max_load_avg or load_five > max_load_avg or load_fifteen > max_load_avg:
             load_flag = True
@@ -59,8 +61,14 @@ def get_load_avgs():
 
     return load_one, load_five, load_fifteen, load_flag
 
-# Get disk free space
+# Get disk usage
 def get_disk_used():
+    # Get disk usage for the mount we care about. If free space is lower than the
+    # warning threshold, raise the flag.
+    # (diskfree_flag corresponds to machineStatus.diskFree.freeSpace in the JSON payload)
+
+    diskfree_cmd = f"df -h {mountpoint} | awk 'NR==2 {{print $5}}'"
+
     try:
         disk_used = int(os.popen(diskfree_cmd).read().strip().strip("%"))
 
@@ -77,13 +85,18 @@ def get_disk_used():
 
 # Make the JSON payload
 def make_payload():
+    # Get all the data
+    load_one, load_five, load_fifteen, load_flag = get_load_avgs()
+    disk_used, diskfree_flag = get_disk_used()
+
+    # Make the data structure
     status_update = {
         "name": hostname,
         "machineStatus": {
             "loadAverages": {
-                "load-1": round(load_one, 2),
-                "load-5": round(load_five, 2),
-                "load-15": round(load_fifteen, 2),
+                "load-1": load_one,
+                "load-5": load_five,
+                "load-15": load_fifteen,
                 "problemFlag": load_flag
             },
             "diskFree": {
@@ -99,23 +112,22 @@ def make_payload():
     # Make the JSON payload
     try:
         status_update_json = json.dumps(status_update)
-        # print(f"{status_update_json}")
     except Exception as e:
         output_error = f"Error creating status update JSON: {str(e)}"
         sys.exit(output_error)
 
+    # Uncomment this print statement to send the JSON object to stdout
+    # print(f"{status_update_json}")
     return status_update_json
 
-# Let's connect to a server!
+# Send the update to the server
 def make_request():
-
     # Set up the request, and add the content-type header
-    req = Request(url = one_machine_address, data = bytes(payload.encode("utf-8")), method = "PUT")
-
+    this_machine_address = base_address + "/machines/" + hostname
+    req = Request(url = this_machine_address, data = bytes(payload.encode("utf-8")), method = "PUT")
     req.add_header("Content-type", "application/json; charset=UTF-8")
 
     # Send the update to the server
-
     try:
         with urlopen(req) as resp:
             #response_data = json.loads(resp.read().decode("utf-8"))
@@ -123,27 +135,24 @@ def make_request():
                 logtime = datetime.now().strftime("%Y-%m-%d %X")
                 print( f"{logtime} Update successful")
     except HTTPError as error:
-        print( f"Server error: {error.status} {error.reason}" )
+        output_error = f"Server error: {error.status} {error.reason}"
+        sys.exit(output_error)
     except URLError as error:
-        print(error.reason)
+        output_error = f"URL error: {error.reason}"
+        sys.exit(output_error)
     except TimeoutError:
-        print("Request timed out")
+        output_error = "Request timed out"
+        sys.exit(output_error)
     except Exception as e:
-        output_error = f"Error in PUT attempt: {str(e)}"
+        output_error = f"Uncaught error: {str(e)}"
         sys.exit(output_error)
 
 base_address, mountpoint, min_free_space, max_load_avg = read_config()
 
-status_address = base_address + "/"
-vibe_address = base_address + "/vibe"
-all_machines_address = base_address + "/machines"
-one_machine_address = base_address + "/machines/" + hostname
-
-load_one, load_five, load_fifteen, load_flag = get_load_avgs()
-
-diskfree_cmd = f"df -h {mountpoint} | awk 'NR==2 {{print $5}}'"
-
-disk_used, diskfree_flag = get_disk_used()
+# Useful for API testing. Not used in production.
+# status_address = base_address + "/"
+# vibe_address = base_address + "/vibe"
+# all_machines_address = base_address + "/machines"
 
 payload = make_payload()
 

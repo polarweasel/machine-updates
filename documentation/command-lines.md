@@ -84,7 +84,7 @@ Tell curl to make a PUT request, instead of POST, by using the -T argument to up
 ```sh
 curl -T good-machine.json \
      -H "Content-Type: application/json" \
-     http://localhost:4010/machines/tiny-mines
+     http://localhost:8080/machines/tiny-mines
 ```
 
 Use the [jq utility](https://jqlang.github.io/jq/) to pretty-print the JSON response from an API call:

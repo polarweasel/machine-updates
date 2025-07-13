@@ -10,9 +10,7 @@
 package swagger
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -43,49 +41,55 @@ func NewRouter() *mux.Router {
 	return router
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World!")
-}
+// func Index(w http.ResponseWriter, r *http.Request) {
+// 	fmt.Fprintf(w, "Hello World!\n")
+// }
 
 var routes = Routes{
-	//	Route{
-	//		"Index",
-	//		"GET",
-	//		"/machine-status/",
-	//		Index,
-	//	},
+	// Route{
+	// 	"Index",
+	// 	"GET",
+	// 	"/",
+	// 	Index,
+	// },
 
+	// APIVersionList is the root of the base path
+	// (This API shouldn't answer on / alone)
 	Route{
 		"APIVersionList",
-		strings.ToUpper("Get"),
+		"GET",
 		"/machine-status/",
 		APIVersionList,
 	},
 
+	// Get info for all machines
 	Route{
 		"GetAllMachines",
-		strings.ToUpper("Get"),
+		"GET",
 		"/machine-status/machines",
 		GetAllMachines,
 	},
 
+	// Get info for a single machine
 	Route{
 		"GetMachine",
-		strings.ToUpper("Get"),
+		"GET",
 		"/machine-status/machines/{machineId}",
 		GetMachine,
 	},
 
+	// Update a single machine's info
 	Route{
 		"UpdateMachine",
-		strings.ToUpper("Put"),
+		"PUT",
 		"/machine-status/machines/{machineId}",
 		UpdateMachine,
 	},
 
+	// Get the overall vibe
 	Route{
 		"VibeCheck",
-		strings.ToUpper("Get"),
+		"GET",
 		"/machine-status/vibe",
 		VibeCheck,
 	},

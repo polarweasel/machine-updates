@@ -17,16 +17,27 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 func GetAllMachines(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "All-machine info\n")
 }
 
 func GetMachine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	vars := mux.Vars(r)
+	machineId, ok := vars["machineId"]
+	if !ok {
+		// This code path will never happen!
+		// (The router redirects to remove the trailing slash)
+		http.Error(w, "no ID in request???", http.StatusBadRequest)
+	}
+	fmt.Fprintf(w, "Single-machine info for %s\n", machineId)
 }
 
 func UpdateMachine(w http.ResponseWriter, r *http.Request) {
@@ -47,17 +58,25 @@ func UpdateMachine(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	vars := mux.Vars(r)
+	machineId, ok := vars["machineId"]
+	if !ok {
+		// This code path will never happen!
+		// (The router redirects to remove the trailing slash)
+		http.Error(w, "no ID in request???", http.StatusBadRequest)
+	}
+
 	// Once we're done with all the error-checking, write out
 	// the response. There's no response body, just the status code.
 	//w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	fmt.Fprintf(w, "Single-machine update for %s\n", machineId)
 	w.WriteHeader(http.StatusCreated)
 }
 
 func VibeCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Dunno about vibes, but the API version is %s\n", APIVersion)
-
+	fmt.Fprintf(w, "No vibes yet, but API version is %s\n", APIVersion)
 }
 
 /*
@@ -123,7 +142,7 @@ func personCreate(w http.ResponseWriter, r *http.Request) {
 		// is an open issue regarding this at
 		// https://github.com/golang/go/issues/25956.
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			msg := fmt.Sprintf("Request body contains badly-formed JSON")
+			msg := "Request body contains badly-formed JSON"
 			http.Error(w, msg, http.StatusBadRequest)
 
 		// Catch any type errors, like trying to assign a string in the

@@ -11,12 +11,11 @@ package swagger
 
 // A machine's 1/5/15-minute load averages
 type LoadAverages struct {
+	Load1 float64 `json:"load-1"`
 
-	Load1 float64 `json:"load-1,omitempty"`
+	Load5 float64 `json:"load-5"`
 
-	Load5 float64 `json:"load-5,omitempty"`
-
-	Load15 float64 `json:"load-15,omitempty"`
+	Load15 float64 `json:"load-15"`
 	// True if this should be highlighted, false otherwise
-	ProblemFlag bool `json:"problemFlag,omitempty"`
+	ProblemFlag bool `json:"problemFlag"`
 }

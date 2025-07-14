@@ -86,6 +86,14 @@ var routes = Routes{
 		UpdateMachine,
 	},
 
+	// Delete a single machine's info
+	Route{
+		"UpdateMachine",
+		"DELETE",
+		"/machine-status/machines/{machineId}",
+		DeleteMachine,
+	},
+
 	// Get the overall vibe
 	Route{
 		"VibeCheck",

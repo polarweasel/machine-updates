@@ -1,5 +1,6 @@
 temp/
 dist/
+test.db/
 # until we have an actual build, we might not want to be ignoring dist!
 
 # If using npm:

@@ -10,7 +10,6 @@
 package swagger
 
 type MachineMachineStatus struct {
-
 	LoadAverages *LoadAverages `json:"loadAverages,omitempty"`
 
 	DiskFree *DiskFree `json:"diskFree,omitempty"`

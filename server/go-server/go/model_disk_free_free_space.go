@@ -11,7 +11,7 @@ package swagger
 
 type DiskFreeFreeSpace struct {
 	// Available disk space, as an integer percentage
-	FreeSpacePercentage int32 `json:"freeSpacePercentage,omitempty"`
+	FreeSpacePercentage int32 `json:"freeSpacePercentage"`
 	// True if this should be highlighted, false otherwise
-	ProblemFlag bool `json:"problemFlag,omitempty"`
+	ProblemFlag bool `json:"problemFlag"`
 }

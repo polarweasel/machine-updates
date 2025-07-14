@@ -1,0 +1,1 @@
+curl -v -T good-machine.json -H "Content-Type: application/json" http://localhost:8080/machine-status/machines/tiny-mines

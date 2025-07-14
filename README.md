@@ -18,6 +18,19 @@ And every time you regenerate it, you need to fix the `import` statement in `mai
   sw "example/go-server/go"
 ```
 
+### Generate Go models only
+
+Or... just generate the models, and leave the implementation code alone! (This is using the [selective generation](https://github.com/swagger-api/swagger-codegen/blob/3.0.0/docs/generation-selective.md) options.)
+
+```bash
+# Run this from the `server` directory
+java -Dmodels -DmodelDocs=false -DmodelTests=false \
+     -jar ../swagger-codegen/swagger-codegen-cli.jar \
+     generate -i api-specs/machine-status.yaml \
+     -l go-server \
+     -o go-server
+```
+
 ## Python client
 
 The client and configuration file are in `/client`. This should be ready to go once the server exists. It does send valid output according to the mocking server, at least!

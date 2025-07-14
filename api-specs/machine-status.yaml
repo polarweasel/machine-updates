@@ -256,7 +256,8 @@ components:
       type: string
       description: Name of the machine
       pattern: '^[A-Za-z][A-Za-z0-9\.-]+$'
-      example: 'tiny-mines'
+      maxLength: 256
+      example: tiny-mines.example.com
 
     LoadAverages:
       description: A machine's 1/5/15-minute load averages
@@ -265,12 +266,15 @@ components:
         load-1:
           type: number
           minimum: 0.00
+          example: 1.20
         load-5:
           type: number
           minimum: 0.00
+          example: 0.15
         load-15:
           type: number
           minimum: 0.00
+          example: 0.00
         problemFlag:
           description: True if this should be highlighted, false otherwise
           type: boolean

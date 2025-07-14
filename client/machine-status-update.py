@@ -52,6 +52,8 @@ def get_load_avgs():
 
         if load_one > max_load_avg or load_five > max_load_avg or load_fifteen > max_load_avg:
             load_flag = True
+        elif load_one < 0 or load_five < 0 or load_fifteen < 0:
+            load_flag = True
         else:
             load_flag = False
 
@@ -72,7 +74,7 @@ def get_disk_used():
     try:
         disk_used = int(os.popen(diskfree_cmd).read().strip().strip("%"))
 
-        if (100 - disk_used) < min_free_space:
+        if (100 - disk_used) < min_free_space or (100 - disk_used) < 0:
             diskfree_flag = True
         else:
             diskfree_flag = False

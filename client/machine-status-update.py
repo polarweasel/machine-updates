@@ -2,7 +2,7 @@
 
 # machine-status updater
 #
-# When this is deployed, it should be named /usr/local/bin/machine-status-update.py
+# When this is deployed, it should be named /usr/local/bin/machine-status-update
 # (Remember to make it executable!)
 
 import socket

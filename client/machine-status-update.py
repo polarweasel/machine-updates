@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 # machine-status updater
+#
+# When this is deployed, it should be named /usr/local/bin/machine-status-update.py
+# (Remember to make it executable!)
 
-#import subprocess
 import socket
 from time import localtime, strftime
 from urllib.error import HTTPError, URLError
@@ -12,17 +14,13 @@ import os
 import sys
 import toml
 from datetime import datetime
-# import hashlib
-# import netifaces as ni
-# from PIL import Image, ImageFont, ImageDraw
 
 load_flag = False      # True if load averages are too high
 diskfree_flag = False  # True if disk free space is too low
 
-# base_address = "http://localhost:4010"
 hostname = socket.gethostname() # This machine's hostname
 
-CONFIG_FILENAME = "config.toml"
+CONFIG_FILENAME = "/etc/machine-status-update/config.toml"
 
 # Read config file
 def read_config():

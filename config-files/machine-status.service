@@ -1,0 +1,41 @@
+[Unit]
+Description=Machine Status API
+#
+# This file should be /etc/systemd/system/machine-status.service
+# Install it as follows:
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable machine-status.service
+#   sudo systemctl start machine-status.service
+#   sudo systemctl status machine-status.service
+#
+# This unit is supposed to indicate when network functionality is available, but it is only
+# very weakly defined what that is supposed to mean, with one exception: at shutdown, a unit
+# that is ordered after network-online.target will be stopped before the network
+Wants=network-online.target
+After=network-online.target
+
+# Limit (re)start loop to 5 within 10 minutes
+StartLimitBurst=5
+StartLimitIntervalSec=600s
+
+[Service]
+Type=simple
+Restart=on-failure
+
+ExecStart=/usr/local/bin/machine-status
+RestartSec=5s
+ExecReload=/bin/kill -HUP $MAINPID
+ExecStopPost=/opt/pihole/pihole-FTL-poststop.sh
+
+# Use graceful shutdown with a reasonable timeout
+TimeoutStopSec=60s
+
+# Make /usr, /boot, /etc and possibly some more folders read-only...
+ProtectSystem=full
+# ... except /etc/machine-status
+# This merely retains r/w access rights, it does not add any new.
+# Must still be writable on the host!
+ReadWriteDirectories=/etc/machine-status
+
+[Install]
+WantedBy=multi-user.target

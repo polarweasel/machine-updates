@@ -1,0 +1,7 @@
+# machine-status-cron
+#
+# This file should be named /etc/cron.d/machine-status-cron
+#
+# m h  dom mon dow   command
+*/5 *  * * *   root PATH="$PATH:/usr/sbin:/usr/local/bin/" machine-status-update
+@reboot root PATH="$PATH:/usr/sbin:/usr/local/bin/" machine-status-update

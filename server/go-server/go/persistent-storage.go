@@ -10,14 +10,44 @@ import (
 	"go.mills.io/bitcask/v2"
 )
 
-func deleteMachine(machineId string) error {
-	db, err := bitcask.Open("test.db")
+const dbname = "/etc/machine-status/status.db"
+const collection = "machines"
+
+func getVibes() (vibeResponse, error) {
+	// But actually, we need to iterate through each machine and find out if there's a flag raised.
+	db, err := bitcask.Open(dbname)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
 	defer db.Close()
 
-	c := db.Collection("machines")
+	c := db.Collection(collection)
+
+	var machines []Machine
+	c.List(&machines)
+
+	for i := range machines {
+		if machines[i].MachineStatus.LoadAverages.ProblemFlag {
+			return vibeResponse{false}, nil
+		}
+
+		if machines[i].MachineStatus.DiskFree.FreeSpace.ProblemFlag {
+			return vibeResponse{false}, nil
+		}
+	}
+
+	return vibeResponse{true}, nil
+}
+
+func deleteMachine(machineId string) error {
+	// TODO: put the DB logic in ONE place only (but that might mess with the `defer`)
+	db, err := bitcask.Open(dbname)
+	if err != nil {
+		log.Fatalf("error opening database: %v", err)
+	}
+	defer db.Close()
+
+	c := db.Collection(collection)
 
 	// We shouldn't ever hit this path, so definitely crash the app if we do
 	if machineId == "" {
@@ -32,13 +62,13 @@ func deleteMachine(machineId string) error {
 }
 
 func getMachine(machineId string) (Machine, error) {
-	db, err := bitcask.Open("test.db")
+	db, err := bitcask.Open(dbname)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
 	defer db.Close()
 
-	c := db.Collection("machines")
+	c := db.Collection(collection)
 
 	// We shouldn't ever hit this path, so definitely crash the app if we do
 	if machineId == "" {
@@ -56,13 +86,13 @@ func getMachine(machineId string) (Machine, error) {
 }
 
 func getMachineList() ([]Machine, error) {
-	db, err := bitcask.Open("test.db")
+	db, err := bitcask.Open(dbname)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
 	defer db.Close()
 
-	c := db.Collection("machines")
+	c := db.Collection(collection)
 
 	var machineList []Machine
 
@@ -75,13 +105,13 @@ func getMachineList() ([]Machine, error) {
 }
 
 func updateMachine(machineData Machine) error {
-	db, err := bitcask.Open("test.db")
+	db, err := bitcask.Open(dbname)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
 	defer db.Close()
 
-	c := db.Collection("machines")
+	c := db.Collection(collection)
 
 	if err := c.Add(machineData.Name, machineData); err != nil {
 		log.Printf("error adding %s to database: %v", machineData.Name, err)

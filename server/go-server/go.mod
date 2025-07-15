@@ -1,4 +1,4 @@
-module polarweasel/machine-updates
+module polarweasel/machine-status
 
 go 1.24.4
 

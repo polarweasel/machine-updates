@@ -7,8 +7,7 @@
  */
 package swagger
 
-type MachineMachineStatus struct {
-	LoadAverages *LoadAverages `json:"loadAverages"`
-
-	DiskFree *DiskFree `json:"diskFree"`
+type VersionResponse struct {
+	// The API version
+	Version string `json:"version"`
 }

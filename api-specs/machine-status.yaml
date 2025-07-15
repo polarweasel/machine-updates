@@ -97,11 +97,11 @@ paths:
     get:
       summary: Get the overall vibe
       description: |
-        Returns overall status (happy, missing-machine, or oh-shit).
+        Returns a boolean status.
 
-        If status is `happy`, the rest of the return object is empty.
+        If status is `true`, all is well with the world.
 
-        If status is `missing-machine` or `oh-shit`, the return object contains additional information about the failure condition.
+        If status is `false`, something is wrong. Check the display and logs.
       tags:
         - Machine info
       operationId: vibe_check
@@ -180,11 +180,7 @@ components:
             type: object
             properties:
               overall-vibe:
-                type: string
-                enum:
-                  - happy
-                  - missing-machine
-                  - oh-shit
+                type: boolean
 
     BadRequest:
       description: |

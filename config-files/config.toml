@@ -2,17 +2,19 @@
 #
 # This file should be named /etc/machine-status-update/config.toml
 
-# Where are we checking free space?
-mountpoint = "/"
-
-# How little free space before we warn?
-min_free_space = 20
-
-# How high is too high for load averages?
-max_load_avg = 3
-
+# CHANGE THE SERVER ADDRESS!
 # Server IP. Default 127.0.0.1 (localhost)
 machine_status_ip = "pi-hole4"
 
 # Server web port. Default is 80
 machine_status_port = "8080"
+
+# Where are we checking free space?
+# Change this if your main data volume is mounted elsewhere.
+mountpoint = "/"
+
+# How little free space before we warn?
+min_free_space = 20
+
+# How high can load averages get before we warn?
+max_load_avg = 3

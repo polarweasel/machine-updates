@@ -11,6 +11,7 @@ machine_status_port = "8080"
 
 # Where are we checking free space?
 # Change this if your main data volume is mounted elsewhere.
+# macOS note: you probably want /System/Volumes/Data here
 mountpoint = "/"
 
 # How little free space before we warn?

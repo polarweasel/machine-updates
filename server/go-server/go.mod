@@ -15,4 +15,5 @@ require (
 	go.mills.io/bitcask/v2 v2.1.3 // indirect
 	golang.org/x/exp v0.0.0-20250711185948-6ae5c78190dc // indirect
 	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/text v0.27.0
 )

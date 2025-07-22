@@ -6,16 +6,17 @@ package swagger
 
 import (
 	"log"
+	"time"
 
 	"go.mills.io/bitcask/v2"
 )
 
-const dbname = "/etc/machine-status/status.db"
+const dbName = "/etc/machine-status/status.db"
 const collection = "machines"
 
 func getVibes() (vibeResponse, error) {
 	// But actually, we need to iterate through each machine and find out if there's a flag raised.
-	db, err := bitcask.Open(dbname)
+	db, err := bitcask.Open(dbName)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
@@ -41,7 +42,7 @@ func getVibes() (vibeResponse, error) {
 
 func deleteMachine(machineId string) error {
 	// TODO: put the DB logic in ONE place only (but that might mess with the `defer`)
-	db, err := bitcask.Open(dbname)
+	db, err := bitcask.Open(dbName)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
@@ -62,7 +63,7 @@ func deleteMachine(machineId string) error {
 }
 
 func getMachine(machineId string) (Machine, error) {
-	db, err := bitcask.Open(dbname)
+	db, err := bitcask.Open(dbName)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
@@ -86,7 +87,7 @@ func getMachine(machineId string) (Machine, error) {
 }
 
 func getMachineList() ([]Machine, error) {
-	db, err := bitcask.Open(dbname)
+	db, err := bitcask.Open(dbName)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
@@ -105,13 +106,15 @@ func getMachineList() ([]Machine, error) {
 }
 
 func updateMachine(machineData Machine) error {
-	db, err := bitcask.Open(dbname)
+	db, err := bitcask.Open(dbName)
 	if err != nil {
 		log.Fatalf("error opening database: %v", err)
 	}
 	defer db.Close()
 
 	c := db.Collection(collection)
+
+	machineData.Timestamp = time.Now()
 
 	if err := c.Add(machineData.Name, machineData); err != nil {
 		log.Printf("error adding %s to database: %v", machineData.Name, err)

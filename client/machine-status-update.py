@@ -131,9 +131,9 @@ def make_request():
     try:
         with urlopen(req) as resp:
             #response_data = json.loads(resp.read().decode("utf-8"))
-            if resp.status == 201:
+            if resp.status != 201:
                 logtime = datetime.now().strftime("%Y-%m-%d %X")
-                print( f"{logtime} Update successful")
+                print( f"{logtime} Got a non-201 success from the server: {resp.status}")
     except HTTPError as error:
         output_error = f"Server error: {error.status} {error.reason}"
         sys.exit(output_error)
